@@ -1,0 +1,2493 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Muse Dash Custom Album Editor</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #f2e7d7;
+      --panel: rgba(255, 250, 242, 0.92);
+      --panel-strong: rgba(255, 247, 236, 0.98);
+      --text: #1f2937;
+      --muted: #6b7280;
+      --accent: #d9485f;
+      --accent-soft: rgba(217, 72, 95, 0.14);
+      --line: rgba(148, 163, 184, 0.22);
+      --ok: #0f766e;
+      --warn: #92400e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at top left, rgba(251, 191, 36, 0.28), transparent 30%),
+        radial-gradient(circle at bottom right, rgba(244, 114, 182, 0.2), transparent 28%),
+        linear-gradient(135deg, #fef8ef 0%, var(--bg) 56%, #edd7cb 100%);
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: 360px minmax(0, 1fr);
+      gap: 18px;
+      min-height: 100vh;
+      padding: 18px;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 24px;
+      box-shadow: 0 16px 38px rgba(120, 53, 15, 0.09);
+      backdrop-filter: blur(10px);
+    }
+
+    .sidebar {
+      padding: 22px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .main {
+      padding: 18px;
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 16px;
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+    }
+
+    h1 {
+      font-size: 28px;
+      margin-bottom: 8px;
+    }
+
+    h2 {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+
+    .muted {
+      color: var(--muted);
+      line-height: 1.5;
+    }
+
+    .card {
+      background: var(--panel-strong);
+      border: 1px solid var(--line);
+      border-radius: 18px;
+      padding: 16px;
+    }
+
+    .button-row,
+    .transport {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    button {
+      border: 0;
+      border-radius: 999px;
+      padding: 12px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+      background: linear-gradient(135deg, var(--accent) 0%, #fb7185 100%);
+      cursor: pointer;
+      box-shadow: 0 12px 24px rgba(217, 72, 95, 0.2);
+    }
+
+    button.secondary {
+      color: var(--text);
+      background: white;
+      box-shadow: none;
+      border: 1px solid var(--line);
+    }
+
+    button:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+      box-shadow: none;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      background: white;
+      border: 1px solid var(--line);
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .status {
+      padding: 14px 16px;
+      border-radius: 16px;
+      background: var(--accent-soft);
+      color: #8a2033;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    .status.ok {
+      background: rgba(15, 118, 110, 0.12);
+      color: var(--ok);
+    }
+
+    .status.warn {
+      background: rgba(245, 158, 11, 0.14);
+      color: var(--warn);
+    }
+
+    .meta-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    label {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    input[type="text"],
+    input[type="number"],
+    input[type="range"] {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      font: inherit;
+      color: var(--text);
+      background: white;
+    }
+
+    input[type="range"] {
+      padding: 0;
+      accent-color: var(--accent);
+    }
+
+    .timeline-card {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 14px;
+      min-height: 0;
+    }
+
+    .wave-shell {
+      position: relative;
+      overflow: hidden;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      min-height: 300px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,246,239,0.96));
+    }
+
+    #waveform {
+      display: block;
+      width: 100%;
+      height: clamp(300px, 34vh, 440px);
+      cursor: pointer;
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .legend span::before {
+      content: "";
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      margin-right: 6px;
+      border-radius: 50%;
+      vertical-align: middle;
+    }
+
+    .legend .wave::before {
+      background: #cbd5e1;
+    }
+
+    .legend .playhead::before {
+      background: #f59e0b;
+    }
+
+    .legend .note::before {
+      background: var(--accent);
+    }
+
+    .split {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 360px;
+      gap: 16px;
+      min-height: 0;
+    }
+
+    .editor-column {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 16px;
+      min-height: 0;
+    }
+
+    .lane-editor {
+      display: grid;
+      grid-template-rows: auto auto minmax(0, 1fr);
+      gap: 14px;
+      min-height: 0;
+    }
+
+    .lane-scroll {
+      position: relative;
+      overflow: auto;
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: rgba(255, 255, 255, 0.72);
+      padding: 16px;
+    }
+
+    .lane-stack {
+      display: grid;
+      gap: 14px;
+      min-width: 960px;
+    }
+
+    .lane-row {
+      border-radius: 18px;
+      border: 1px solid var(--line);
+      background: linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,245,240,0.92));
+      padding: 14px 18px 18px;
+    }
+
+    .lane-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .lane-track {
+      position: relative;
+      height: 132px;
+      border-radius: 14px;
+      overflow: hidden;
+      background:
+        repeating-linear-gradient(
+          90deg,
+          rgba(148, 163, 184, 0.18) 0,
+          rgba(148, 163, 184, 0.18) 1px,
+          transparent 1px,
+          transparent 80px
+        ),
+        linear-gradient(180deg, rgba(255,255,255,0.9), rgba(255,247,240,0.95));
+    }
+
+    .lane-midline {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      border-top: 2px dashed rgba(148, 163, 184, 0.24);
+      transform: translateY(-50%);
+    }
+
+    .lane-gridline {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 1px;
+      background: rgba(148, 163, 184, 0.25);
+    }
+
+    .lane-gridline.beat {
+      background: rgba(217, 72, 95, 0.38);
+      width: 2px;
+    }
+
+    .lane-playhead {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 2px;
+      background: #f59e0b;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.72), 0 0 18px rgba(245, 158, 11, 0.3);
+      z-index: 2;
+      pointer-events: none;
+    }
+
+    .lane-hold {
+      position: absolute;
+      top: 50%;
+      height: 12px;
+      transform: translateY(-50%);
+      border-radius: 999px;
+      background: rgba(217, 72, 95, 0.26);
+      border: 1px solid rgba(217, 72, 95, 0.42);
+    }
+
+    .lane-hold.lane-2 {
+      background: rgba(37, 99, 235, 0.22);
+      border-color: rgba(37, 99, 235, 0.4);
+    }
+
+    .lane-hold.selected {
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.2);
+    }
+
+    .lane-note {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      min-width: 18px;
+      height: 18px;
+      padding: 0 6px;
+      border-radius: 999px;
+      border: 2px solid rgba(255,255,255,0.9);
+      background: var(--accent);
+      box-shadow: 0 6px 18px rgba(217, 72, 95, 0.26);
+      cursor: pointer;
+    }
+
+    .lane-note.lane-2 {
+      background: #2563eb;
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.26);
+    }
+
+    .lane-note.selected {
+      width: 22px;
+      height: 22px;
+      outline: 3px solid rgba(245, 158, 11, 0.38);
+      z-index: 3;
+    }
+
+    .lane-note.dragging {
+      cursor: grabbing;
+      opacity: 0.88;
+    }
+
+    .lane-note.double {
+      box-shadow:
+        0 0 0 2px rgba(255, 255, 255, 0.9),
+        0 0 0 5px rgba(245, 158, 11, 0.28),
+        0 6px 18px rgba(217, 72, 95, 0.26);
+    }
+
+    .lane-note.double.lane-2 {
+      box-shadow:
+        0 0 0 2px rgba(255, 255, 255, 0.9),
+        0 0 0 5px rgba(245, 158, 11, 0.28),
+        0 6px 18px rgba(37, 99, 235, 0.26);
+    }
+
+    .lane-note.double::after {
+      content: "";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 6px;
+      height: 6px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.92);
+      transform: translate(-50%, -50%);
+    }
+
+    .lane-note-end {
+      min-width: 16px;
+      height: 16px;
+      z-index: 2;
+    }
+
+    .selection-box {
+      position: absolute;
+      border: 1px dashed rgba(245, 158, 11, 0.9);
+      background: rgba(245, 158, 11, 0.14);
+      border-radius: 10px;
+      pointer-events: none;
+      z-index: 8;
+    }
+
+    .lane-times {
+      position: relative;
+      height: 24px;
+      margin-top: 8px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .lane-tick {
+      position: absolute;
+      top: 0;
+      transform: translateX(-50%);
+      white-space: nowrap;
+    }
+
+    .help ul {
+      margin: 10px 0 0;
+      padding-left: 18px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .mono {
+      font-family: Consolas, "Courier New", monospace;
+      word-break: break-all;
+    }
+
+    audio {
+      display: none;
+    }
+
+    select,
+    textarea {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--line);
+      padding: 10px 12px;
+      font: inherit;
+      color: var(--text);
+      background: white;
+    }
+
+    textarea {
+      min-height: 96px;
+      resize: vertical;
+    }
+
+    .editor-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 12px;
+    }
+
+    .editor-grid .full {
+      grid-column: 1 / -1;
+    }
+
+    .editor-card {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .side-column {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 16px;
+      min-height: 0;
+    }
+
+    .check-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .check-row label {
+      display: inline-flex;
+      align-items: center;
+      flex-direction: row;
+      gap: 8px;
+    }
+
+    .action-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .note-preview {
+      padding: 14px;
+      border-radius: 16px;
+      background: rgba(217, 72, 95, 0.08);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    .empty-editor {
+      padding: 24px;
+      text-align: center;
+      color: var(--muted);
+      line-height: 1.6;
+      border: 1px dashed var(--line);
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.5);
+    }
+
+    @media (max-width: 1100px) {
+      .shell,
+      .split {
+        grid-template-columns: 1fr;
+      }
+
+      .main {
+        grid-template-rows: auto auto auto;
+      }
+    }
+  </style>
+  <link rel="stylesheet" href="export-ui.css">
+</head>
+<body>
+  <div class="shell">
+    <aside class="panel sidebar">
+      <div>
+        <h1>Muse Dash Custom Album Editor</h1>
+        <p class="muted">Phase 1 MVP: import MP3, convert to OGG, view waveform, tap notes with two keys on one timing lane, and save a chart JSON for later note definition.</p>
+      </div>
+
+      <div class="button-row">
+        <button id="importButton">Import MP3</button>
+        <button id="openButton" class="secondary">Open Chart</button>
+        <button id="saveButton" class="secondary" disabled>Save Chart</button>
+        <button id="exportButton" class="secondary" disabled>Export MDM</button>
+      </div>
+
+      <div id="statusBox" class="status warn">FFmpeg must be installed and available in PATH before importing audio.</div>
+
+      <section class="card">
+        <h2>Chart Metadata</h2>
+        <div class="meta-grid">
+          <label>
+            Title
+            <input id="titleInput" type="text" placeholder="Song title">
+          </label>
+          <label>
+            Artist
+            <input id="artistInput" type="text" placeholder="Artist name">
+          </label>
+          <label>
+            BPM
+            <input id="bpmInput" type="number" min="1" step="0.01" value="120">
+          </label>
+          <label>
+            Snap Per Beat
+            <select id="snapDivisionSelect">
+              <option value="1">1</option>
+              <option value="2">2</option>
+              <option value="4" selected>4</option>
+              <option value="8">8</option>
+            </select>
+          </label>
+          <label>
+            Note Count
+            <input id="noteCountInput" type="text" readonly value="0">
+          </label>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Workspace Files</h2>
+        <p class="muted">Audio OGG</p>
+        <p id="oggPath" class="mono muted">No audio imported yet.</p>
+        <p class="muted" style="margin-top: 12px;">Chart JSON</p>
+        <p id="chartPath" class="mono muted">No chart saved yet.</p>
+      </section>
+
+    </aside>
+
+    <main class="panel main">
+      <section class="card">
+        <div class="transport">
+          <button id="playButton" class="secondary" disabled>Play</button>
+          <button id="pauseButton" class="secondary" disabled>Pause</button>
+          <button id="tapButton" disabled>Tap Note</button>
+          <span id="timePill" class="pill">00:00.000 / 00:00.000</span>
+          <span id="zoomPill" class="pill">8.0s window</span>
+        </div>
+        <audio id="audioPlayer" preload="metadata"></audio>
+      </section>
+
+      <section class="split">
+        <section class="editor-column">
+          <section class="card">
+            <h2>Session Summary</h2>
+            <div class="button-row" style="margin-top: 12px;">
+              <span id="songTitlePill" class="pill">No song loaded</span>
+              <span id="selectedNotePill" class="pill">No note selected</span>
+            </div>
+          </section>
+
+          <section class="card lane-editor">
+            <div>
+              <h2>Lane Editor</h2>
+              <p class="muted">Tapped notes start on lane 1. Click notes directly on the lanes to define and move them.</p>
+            </div>
+            <div class="timeline-toolbar">
+              <label style="min-width: 220px; flex: 1 1 220px;">
+                Timeline Position
+                <input id="timelineSlider" type="range" min="0" max="0" step="0.001" value="0" disabled>
+              </label>
+              <label>
+                Seconds Per View
+                <input id="zoomInput" type="number" min="2" max="30" step="1" value="8">
+              </label>
+            </div>
+            <div class="lane-scroll">
+              <div class="lane-stack" id="laneEditor" tabindex="-1"></div>
+              <div id="selectionBox" class="selection-box" hidden></div>
+            </div>
+          </section>
+        </section>
+
+        <section class="side-column">
+          <section class="card help">
+            <h2>Tapping Guide</h2>
+            <ul>
+              <li>Press <strong>Z</strong> or <strong>X</strong> while audio plays to create a note.</li>
+              <li>Both keys create notes on the same timing lane.</li>
+              <li>Double-click empty lane space to create a note at that position.</li>
+              <li>Click the waveform to seek.</li>
+              <li>Select a note and press <strong>Delete</strong> or <strong>Backspace</strong> to remove it.</li>
+            </ul>
+          </section>
+
+          <section class="card editor-card" id="noteEditor"></section>
+        </section>
+      </section>
+
+      <section class="card timeline-card">
+        <div>
+          <h2>Waveform Review</h2>
+          <p class="muted">This view follows the same zoomed time window as the editor, but is optimized for review with waveform, note placement, and a pinned playhead.</p>
+        </div>
+        <div class="legend">
+          <span class="wave">waveform</span>
+          <span class="playhead">playhead</span>
+          <span class="note">snapped note + beat grid</span>
+        </div>
+        <div class="timeline-toolbar">
+          <label style="min-width: 240px; flex: 1 1 240px;">
+            Review Position
+            <input id="reviewSlider" type="range" min="0" max="0" step="0.001" value="0" disabled>
+          </label>
+        </div>
+        <div class="wave-shell">
+          <canvas id="waveform" width="1200" height="360"></canvas>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <script>
+    const fs = require('fs/promises');
+    const { pathToFileURL } = require('url');
+    const { ipcRenderer } = require('electron');
+
+    const state = {
+      chart: null,
+      chartPath: '',
+      waveform: [],
+      duration: 0,
+      analysisChannelData: null,
+      analysisSampleRate: 0,
+      selectedNoteId: null,
+      selectedNoteIds: [],
+      renderFrame: null,
+      viewStart: 0,
+      secondsPerView: 8,
+      editorPinnedRatio: 0.18,
+      reviewPinnedRatio: 0.14,
+      reviewWindowStart: 0,
+      reviewWindowEnd: 8,
+      playCountdownToken: 0,
+      activeScrubber: '',
+      selectionDrag: null,
+      draggingNoteId: null,
+      draggingHoldEndId: null,
+      dragStartClientX: 0,
+      dragStartClientY: 0,
+      dragMoved: false,
+      pressedKeys: {}
+    };
+
+    const importButton = document.getElementById('importButton');
+    const openButton = document.getElementById('openButton');
+    const saveButton = document.getElementById('saveButton');
+    const playButton = document.getElementById('playButton');
+    const pauseButton = document.getElementById('pauseButton');
+    const tapButton = document.getElementById('tapButton');
+    const audioPlayer = document.getElementById('audioPlayer');
+    const waveformCanvas = document.getElementById('waveform');
+    const statusBox = document.getElementById('statusBox');
+    const titleInput = document.getElementById('titleInput');
+    const artistInput = document.getElementById('artistInput');
+    const bpmInput = document.getElementById('bpmInput');
+    const snapDivisionSelect = document.getElementById('snapDivisionSelect');
+    const noteCountInput = document.getElementById('noteCountInput');
+    const oggPath = document.getElementById('oggPath');
+    const chartPath = document.getElementById('chartPath');
+    const laneEditor = document.getElementById('laneEditor');
+    const noteEditor = document.getElementById('noteEditor');
+    const selectionBox = document.getElementById('selectionBox');
+    const reviewSlider = document.getElementById('reviewSlider');
+    const timePill = document.getElementById('timePill');
+    const zoomPill = document.getElementById('zoomPill');
+    const songTitlePill = document.getElementById('songTitlePill');
+    const selectedNotePill = document.getElementById('selectedNotePill');
+    const timelineSlider = document.getElementById('timelineSlider');
+    const zoomInput = document.getElementById('zoomInput');
+
+    const laneOptions = ['lane-1', 'lane-2'];
+
+    const typeOptions = [
+      'tap',
+      'hold',
+      'double',
+      'spinner'
+    ];
+
+    const attributeOptionsByType = {
+      tap: ['normal', 'small', 'medium-1', 'medium-2', 'large-1', 'large-2'],
+      hold: ['default'],
+      double: ['wheel'],
+      spinner: ['burst']
+    };
+
+    function setStatus(message, tone = 'warn') {
+      statusBox.textContent = message;
+      statusBox.className = `status ${tone}`;
+    }
+
+    function sleep(milliseconds) {
+      return new Promise((resolve) => {
+        window.setTimeout(resolve, milliseconds);
+      });
+    }
+
+    function focusEditorForTapping() {
+      if (document.activeElement && typeof document.activeElement.blur === 'function') {
+        document.activeElement.blur();
+      }
+
+      if (typeof laneEditor.focus === 'function') {
+        laneEditor.focus({ preventScroll: true });
+      }
+    }
+
+    function formatTime(seconds) {
+      if (!Number.isFinite(seconds)) {
+        return '00:00.000';
+      }
+
+      const safeSeconds = Math.max(0, seconds);
+      const minutes = Math.floor(safeSeconds / 60);
+      const secs = Math.floor(safeSeconds % 60);
+      const millis = Math.floor((safeSeconds % 1) * 1000);
+
+      return `${String(minutes).padStart(2, '0')}:${String(secs).padStart(2, '0')}.${String(millis).padStart(3, '0')}`;
+    }
+
+    function sortNotes() {
+      if (!state.chart) {
+        return;
+      }
+
+      state.chart.notes.sort((left, right) => left.time - right.time);
+    }
+
+    function syncMetadataInputs() {
+      const metadata = state.chart?.metadata;
+      titleInput.value = metadata?.title || '';
+      artistInput.value = metadata?.artist || '';
+      bpmInput.value = metadata?.bpm || 120;
+      snapDivisionSelect.value = String(metadata?.snapDivision || 4);
+      noteCountInput.value = String(state.chart?.notes?.length || 0);
+      oggPath.textContent = metadata?.oggPath || 'No audio imported yet.';
+      chartPath.textContent = state.chartPath || 'No chart saved yet.';
+      songTitlePill.textContent = metadata?.title || 'No song loaded';
+      saveButton.disabled = !state.chart;
+      playButton.disabled = !state.chart;
+      pauseButton.disabled = !state.chart;
+      tapButton.disabled = !state.chart;
+      timelineSlider.disabled = !state.chart;
+      reviewSlider.disabled = !state.chart;
+      zoomInput.disabled = !state.chart;
+      snapDivisionSelect.disabled = !state.chart;
+      zoomInput.value = String(state.secondsPerView);
+      syncViewportControls();
+    }
+
+    function selectedNote() {
+      return state.chart?.notes?.find((note) => note.id === state.selectedNoteId) || null;
+    }
+
+    function getSelectedNoteIds() {
+      const ids = state.selectedNoteIds?.length ? state.selectedNoteIds : (state.selectedNoteId ? [state.selectedNoteId] : []);
+      return Array.from(new Set(ids));
+    }
+
+    function getSelectedNotes() {
+      const ids = new Set(getSelectedNoteIds());
+      return (state.chart?.notes || []).filter((note) => ids.has(note.id));
+    }
+
+    function hasMultiSelection() {
+      return getSelectedNoteIds().length > 1;
+    }
+
+    function isNoteSelected(noteId) {
+      return getSelectedNoteIds().includes(noteId);
+    }
+
+    function setSelectedNotes(noteIds) {
+      const uniqueIds = Array.from(new Set((noteIds || []).filter(Boolean)));
+      state.selectedNoteIds = uniqueIds;
+      state.selectedNoteId = uniqueIds.length === 1 ? uniqueIds[0] : (uniqueIds[0] || null);
+    }
+
+    function selectSingleNote(noteId) {
+      setSelectedNotes(noteId ? [noteId] : []);
+    }
+
+    function toggleNoteSelection(noteId) {
+      const selectedIds = new Set(getSelectedNoteIds());
+      if (selectedIds.has(noteId)) {
+        selectedIds.delete(noteId);
+      } else {
+        selectedIds.add(noteId);
+      }
+
+      setSelectedNotes(Array.from(selectedIds));
+    }
+
+    function findNoteById(noteId) {
+      return state.chart?.notes?.find((note) => note.id === noteId) || null;
+    }
+
+    function getAttributeOptions(type) {
+      return attributeOptionsByType[type] || attributeOptionsByType.tap;
+    }
+
+    function getDefaultAttribute(type) {
+      if (type === 'tap') {
+        return 'small';
+      }
+
+      return getAttributeOptions(type)[0];
+    }
+
+    function isSustainNote(note) {
+      return note.type === 'hold' || (note.type === 'spinner' && note.attribute === 'burst');
+    }
+
+    function noteOccupiesLane(note, laneName) {
+      if (note.type === 'double') {
+        return laneName === 'lane-1' || laneName === 'lane-2';
+      }
+
+      return note.lane === laneName;
+    }
+
+    function syncNoteDefinition(note) {
+      if (isSustainNote(note)) {
+        if (!Number.isFinite(note.holdLength) || note.holdLength <= 0) {
+          note.holdLength = getSnapLengthSeconds();
+        }
+      } else {
+        note.holdLength = 0;
+      }
+
+      const validAttributes = getAttributeOptions(note.type);
+      if (!validAttributes.includes(note.attribute)) {
+        note.attribute = getDefaultAttribute(note.type);
+      }
+    }
+
+    function normalizeNote(note) {
+      const normalizedType = typeOptions.includes(note.type === 'timing' ? 'tap' : note.type)
+        ? (note.type === 'timing' ? 'tap' : note.type)
+        : 'tap';
+
+      const normalized = {
+        id: note.id,
+        time: Number(note.time || 0),
+        lane: note.lane || 'lane-1',
+        type: normalizedType,
+        attribute: note.attribute || getDefaultAttribute(normalizedType),
+        holdLength: Number(note.holdLength || 0),
+        intensity: Number(note.intensity || 1),
+        mirrored: Boolean(note.mirrored),
+        critical: Boolean(note.critical),
+        comment: note.comment || ''
+      };
+
+      syncNoteDefinition(normalized);
+      return normalized;
+    }
+
+    function clampViewStart() {
+      const total = audioPlayer.duration || state.duration || 0;
+      const maxStart = Math.max(0, total - state.secondsPerView);
+      state.viewStart = Math.min(Math.max(0, state.viewStart), maxStart);
+    }
+
+    function getSnapDivision() {
+      return Number(state.chart?.metadata?.snapDivision || 4);
+    }
+
+    function getBeatLengthSeconds() {
+      const bpm = Number(state.chart?.metadata?.bpm || 120);
+      return bpm > 0 ? 60 / bpm : 0.5;
+    }
+
+    function getSnapLengthSeconds() {
+      return getBeatLengthSeconds() / getSnapDivision();
+    }
+
+    function getHoldThresholdSeconds() {
+      return 0.2;
+    }
+
+    function snapTimeToGrid(time) {
+      if (!state.chart) {
+        return time;
+      }
+
+      const snap = getSnapLengthSeconds();
+      if (!Number.isFinite(snap) || snap <= 0) {
+        return Number(time.toFixed(4));
+      }
+
+      return Number((Math.round(time / snap) * snap).toFixed(4));
+    }
+
+    function getNoteEndTime(note) {
+      return Number((note.time + Math.max(0, Number(note.holdLength || 0))).toFixed(4));
+    }
+
+    function ensureHoldConsistency(note) {
+      syncNoteDefinition(note);
+    }
+
+    function setNoteEndTime(note, endTime) {
+      const snappedEnd = snapTimeToGrid(Math.max(endTime, note.time));
+      note.holdLength = Number(Math.max(0, snappedEnd - note.time).toFixed(4));
+      ensureHoldConsistency(note);
+    }
+
+    function syncSelectedNotePill() {
+      const notes = getSelectedNotes();
+      if (notes.length > 1) {
+        selectedNotePill.textContent = `${notes.length} notes selected`;
+        return;
+      }
+
+      const note = notes[0] || null;
+      selectedNotePill.textContent = note
+        ? `Selected ${note.id} at ${formatTime(note.time)}`
+        : 'No note selected';
+    }
+
+    function updateTimePill() {
+      const current = audioPlayer.currentTime || 0;
+      const total = audioPlayer.duration || state.duration || 0;
+      timePill.textContent = `${formatTime(current)} / ${formatTime(total)}`;
+    }
+
+    function syncViewportControls() {
+      zoomPill.textContent = `${state.secondsPerView.toFixed(1)}s window`;
+      const total = audioPlayer.duration || state.duration || 0;
+      const maxStart = Math.max(0, total - state.secondsPerView);
+      timelineSlider.max = String(maxStart);
+      timelineSlider.value = String(Math.min(state.viewStart, maxStart));
+      reviewSlider.max = String(maxStart);
+      reviewSlider.value = String(Math.min(state.reviewWindowStart || state.viewStart, maxStart));
+    }
+
+    function updatePlaybackFollow() {
+      if (!state.chart || audioPlayer.paused || state.activeScrubber) {
+        return;
+      }
+
+      const currentTime = audioPlayer.currentTime || 0;
+      const pinnedOffsetSeconds = state.secondsPerView * state.editorPinnedRatio;
+      state.viewStart = Math.max(0, currentTime - pinnedOffsetSeconds);
+      clampViewStart();
+    }
+
+    function getEditorPlayheadPercent() {
+      const currentTime = audioPlayer.currentTime || 0;
+      const windowEnd = state.viewStart + state.secondsPerView;
+      if (currentTime < state.viewStart - 0.001 || currentTime > windowEnd + 0.001) {
+        return null;
+      }
+
+      return ((currentTime - state.viewStart) / state.secondsPerView) * 100;
+    }
+
+    function seekFromViewportStart(nextViewStart, pinnedRatio) {
+      const total = audioPlayer.duration || state.duration || 0;
+      const clampedViewStart = clampReviewWindowStart(nextViewStart);
+      const targetTime = Math.min(total, Math.max(0, clampedViewStart + state.secondsPerView * pinnedRatio));
+      state.viewStart = clampedViewStart;
+      audioPlayer.currentTime = targetTime;
+      clampViewStart();
+      updateTimePill();
+      renderAll();
+    }
+
+    function ensureWaveformCanvasResolution() {
+      const rect = waveformCanvas.getBoundingClientRect();
+      const devicePixelRatio = window.devicePixelRatio || 1;
+      const width = Math.max(1, Math.round(rect.width * devicePixelRatio));
+      const height = Math.max(1, Math.round(rect.height * devicePixelRatio));
+
+      if (waveformCanvas.width !== width || waveformCanvas.height !== height) {
+        waveformCanvas.width = width;
+        waveformCanvas.height = height;
+      }
+    }
+
+    function clampReviewWindowStart(startTime) {
+      const total = audioPlayer.duration || state.duration || 0;
+      const maxStart = Math.max(0, total - state.secondsPerView);
+      return Math.min(Math.max(0, startTime), maxStart);
+    }
+
+    function getReviewWindow() {
+      const currentTime = audioPlayer.currentTime || 0;
+      const total = audioPlayer.duration || state.duration || 0;
+      const pinnedOffsetSeconds = state.secondsPerView * state.reviewPinnedRatio;
+      const isPinnedPlayback = !audioPlayer.paused && total > 0;
+      const start = isPinnedPlayback
+        ? clampReviewWindowStart(currentTime - pinnedOffsetSeconds)
+        : clampReviewWindowStart(state.viewStart);
+      const end = Math.min(total || (start + state.secondsPerView), start + state.secondsPerView);
+      const playheadTime = isPinnedPlayback ? start + pinnedOffsetSeconds : currentTime;
+      const playheadX = ((playheadTime - start) / state.secondsPerView) * waveformCanvas.width;
+
+      state.reviewWindowStart = start;
+      state.reviewWindowEnd = end;
+
+      return {
+        start,
+        end,
+        playheadTime,
+        playheadX,
+        isPinnedPlayback
+      };
+    }
+
+    function noteHitsReviewPlayhead(note, reviewWindow) {
+      const hitTolerance = Math.max(0.04, getSnapLengthSeconds() / 2);
+      if (isSustainNote(note)) {
+        return reviewWindow.playheadTime >= note.time - hitTolerance
+          && reviewWindow.playheadTime <= getNoteEndTime(note) + hitTolerance;
+      }
+
+      return Math.abs(note.time - reviewWindow.playheadTime) <= hitTolerance;
+    }
+
+    function buildWaveformSamples(channelData, sampleCount) {
+      const blockSize = Math.max(1, Math.floor(channelData.length / sampleCount));
+      const samples = [];
+
+      for (let index = 0; index < sampleCount; index += 1) {
+        const start = index * blockSize;
+        const end = Math.min(start + blockSize, channelData.length);
+        let peak = 0;
+
+        for (let cursor = start; cursor < end; cursor += 1) {
+          const value = Math.abs(channelData[cursor]);
+          if (value > peak) {
+            peak = value;
+          }
+        }
+
+        samples.push(peak);
+      }
+
+      return samples;
+    }
+
+    function detectBpmFromAudioData(channelData, sampleRate) {
+      if (!channelData || !sampleRate) {
+        return null;
+      }
+
+      const hopSize = 1024;
+      const frameCount = Math.floor(channelData.length / hopSize);
+      if (frameCount < 32) {
+        return null;
+      }
+
+      const envelope = new Float32Array(frameCount);
+      for (let frame = 0; frame < frameCount; frame += 1) {
+        const start = frame * hopSize;
+        let sum = 0;
+        for (let i = 0; i < hopSize; i += 1) {
+          const sample = channelData[start + i] || 0;
+          sum += sample * sample;
+        }
+        envelope[frame] = Math.sqrt(sum / hopSize);
+      }
+
+      const onset = new Float32Array(frameCount);
+      for (let i = 1; i < frameCount; i += 1) {
+        onset[i] = Math.max(0, envelope[i] - envelope[i - 1]);
+      }
+
+      const minBpm = 70;
+      const maxBpm = 200;
+      const minLag = Math.round((60 / maxBpm) * sampleRate / hopSize);
+      const maxLag = Math.round((60 / minBpm) * sampleRate / hopSize);
+
+      let bestLag = 0;
+      let bestScore = -Infinity;
+
+      for (let lag = minLag; lag <= maxLag; lag += 1) {
+        let score = 0;
+        for (let i = lag; i < frameCount; i += 1) {
+          score += onset[i] * onset[i - lag];
+        }
+
+        if (score > bestScore) {
+          bestScore = score;
+          bestLag = lag;
+        }
+      }
+
+      if (!bestLag) {
+        return null;
+      }
+
+      const bpm = 60 * sampleRate / (hopSize * bestLag);
+      return Number(bpm.toFixed(2));
+    }
+
+    function applyDetectedBpm(options = {}) {
+      if (!state.chart || !state.analysisChannelData || !state.analysisSampleRate) {
+        return null;
+      }
+
+      const bpm = detectBpmFromAudioData(state.analysisChannelData, state.analysisSampleRate);
+      if (!bpm) {
+        return null;
+      }
+
+      state.chart.metadata.bpm = bpm;
+      if (options.snapNotes) {
+        state.chart.notes = state.chart.notes.map((note) => ({
+          ...note,
+          time: snapTimeToGrid(note.time)
+        }));
+        sortNotes();
+      }
+
+      return bpm;
+    }
+
+    async function loadWaveformFromOgg(filePath) {
+      const fileBuffer = await fs.readFile(filePath);
+      const arrayBuffer = fileBuffer.buffer.slice(
+        fileBuffer.byteOffset,
+        fileBuffer.byteOffset + fileBuffer.byteLength
+      );
+
+      const audioContext = new AudioContext();
+
+      try {
+        const decoded = await audioContext.decodeAudioData(arrayBuffer.slice(0));
+        state.duration = decoded.duration;
+        state.waveform = buildWaveformSamples(decoded.getChannelData(0), 1200);
+        state.analysisChannelData = decoded.getChannelData(0).slice();
+        state.analysisSampleRate = decoded.sampleRate;
+      } finally {
+        await audioContext.close();
+      }
+    }
+
+    function drawWaveform() {
+      ensureWaveformCanvasResolution();
+      const context = waveformCanvas.getContext('2d');
+      const width = waveformCanvas.width;
+      const height = waveformCanvas.height;
+      const lanePadding = height * 0.08;
+      const laneGap = height * 0.08;
+      const laneHeight = (height - lanePadding * 2 - laneGap) / 2;
+      const laneTop = {
+        'lane-1': lanePadding,
+        'lane-2': lanePadding + laneHeight + laneGap
+      };
+      const laneCenter = {
+        'lane-1': laneTop['lane-1'] + laneHeight / 2,
+        'lane-2': laneTop['lane-2'] + laneHeight / 2
+      };
+
+      context.clearRect(0, 0, width, height);
+      context.fillStyle = '#fffaf4';
+      context.fillRect(0, 0, width, height);
+
+      context.fillStyle = 'rgba(255, 255, 255, 0.58)';
+      context.fillRect(0, laneTop['lane-1'], width, laneHeight);
+      context.fillRect(0, laneTop['lane-2'], width, laneHeight);
+
+      context.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+      context.lineWidth = 1;
+      context.strokeRect(0.5, laneTop['lane-1'] + 0.5, width - 1, laneHeight - 1);
+      context.strokeRect(0.5, laneTop['lane-2'] + 0.5, width - 1, laneHeight - 1);
+
+      context.setLineDash([6, 6]);
+      context.beginPath();
+      context.moveTo(0, laneCenter['lane-1']);
+      context.lineTo(width, laneCenter['lane-1']);
+      context.moveTo(0, laneCenter['lane-2']);
+      context.lineTo(width, laneCenter['lane-2']);
+      context.stroke();
+      context.setLineDash([]);
+
+      context.fillStyle = 'rgba(107, 114, 128, 0.72)';
+      context.font = `${Math.max(12, Math.round(height * 0.04))}px "Segoe UI", sans-serif`;
+      context.fillText('Lane 1', 12, laneTop['lane-1'] + 18);
+      context.fillText('Lane 2', 12, laneTop['lane-2'] + 18);
+
+      const reviewWindow = getReviewWindow();
+      const windowStart = reviewWindow.start;
+      const windowEnd = reviewWindow.end;
+      const beatLength = getBeatLengthSeconds();
+      const snapLength = getSnapLengthSeconds();
+
+      if (Number.isFinite(snapLength) && snapLength > 0) {
+        const firstIndex = Math.floor(windowStart / snapLength);
+        const lastIndex = Math.ceil(windowEnd / snapLength);
+
+        for (let index = firstIndex; index <= lastIndex; index += 1) {
+          const time = index * snapLength;
+          if (time < windowStart - 0.001 || time > windowEnd + 0.001) {
+            continue;
+          }
+
+          const x = ((time - windowStart) / state.secondsPerView) * width;
+          const isBeat = Math.abs((time / beatLength) - Math.round(time / beatLength)) < 0.001;
+          context.strokeStyle = isBeat ? 'rgba(217, 72, 95, 0.32)' : 'rgba(148, 163, 184, 0.18)';
+          context.lineWidth = isBeat ? 2 : 1;
+          context.beginPath();
+          context.moveTo(x, 0);
+          context.lineTo(x, height);
+          context.stroke();
+        }
+      }
+
+      const samples = state.waveform;
+      context.strokeStyle = '#94a3b8';
+      context.lineWidth = 1;
+
+      if (samples.length > 0 && (audioPlayer.duration || state.duration || 0) > 0) {
+        const totalDuration = audioPlayer.duration || state.duration;
+        const startIndex = Math.max(0, Math.floor((windowStart / totalDuration) * samples.length));
+        const endIndex = Math.min(samples.length - 1, Math.ceil((windowEnd / totalDuration) * samples.length));
+        const visibleSamples = samples.slice(startIndex, Math.max(startIndex + 1, endIndex + 1));
+        const waveformCenter = height / 2;
+        const waveformScale = height * 0.2;
+
+        visibleSamples.forEach((sample, index) => {
+          const x = (index / visibleSamples.length) * width;
+          const amplitude = sample * waveformScale;
+          context.beginPath();
+          context.moveTo(x, waveformCenter - amplitude);
+          context.lineTo(x, waveformCenter + amplitude);
+          context.stroke();
+        });
+      }
+
+      if (state.chart?.notes?.length) {
+        for (const note of state.chart.notes) {
+          const noteEnd = getNoteEndTime(note);
+          if (note.time > windowEnd || noteEnd < windowStart) {
+            continue;
+          }
+
+          const x = ((note.time - windowStart) / state.secondsPerView) * width;
+          const isHit = noteHitsReviewPlayhead(note, reviewWindow);
+          const occupiedLanes = note.type === 'double'
+            ? ['lane-1', 'lane-2']
+            : [note.lane === 'lane-2' ? 'lane-2' : 'lane-1'];
+
+          for (const laneName of occupiedLanes) {
+            const laneY = laneCenter[laneName];
+            const headColor = isHit
+              ? '#f59e0b'
+              : (laneName === 'lane-2' ? '#2563eb' : '#d9485f');
+            context.fillStyle = headColor;
+
+            if (isSustainNote(note)) {
+              const holdEnd = Math.min(getNoteEndTime(note), windowEnd);
+              const holdWidth = Math.max(2, ((holdEnd - note.time) / state.secondsPerView) * width);
+              context.fillStyle = isHit
+                ? 'rgba(245, 158, 11, 0.34)'
+                : (laneName === 'lane-2' ? 'rgba(37, 99, 235, 0.24)' : 'rgba(217, 72, 95, 0.24)');
+              context.fillRect(x, laneY - 7, holdWidth, 14);
+              context.fillStyle = headColor;
+            }
+
+            context.beginPath();
+            context.arc(x, laneY, isNoteSelected(note.id) ? 7 : (isHit ? 6 : 4), 0, Math.PI * 2);
+            context.fill();
+          }
+        }
+      }
+
+      const currentTime = audioPlayer.currentTime || 0;
+      if (currentTime >= windowStart - 0.001 && currentTime <= windowEnd + 0.001) {
+        const playheadX = reviewWindow.playheadX;
+        context.strokeStyle = '#f59e0b';
+        context.lineWidth = 2;
+        context.beginPath();
+        context.moveTo(playheadX, 0);
+        context.lineTo(playheadX, height);
+        context.stroke();
+      }
+    }
+
+    function xToReviewTime(x) {
+      const ratio = Math.min(1, Math.max(0, x / waveformCanvas.width));
+      return state.reviewWindowStart + ratio * state.secondsPerView;
+    }
+
+    function noteInCurrentWindow(note) {
+      const windowEnd = state.viewStart + state.secondsPerView;
+      return note.time >= state.viewStart && note.time <= windowEnd;
+    }
+
+    function notePositionPercent(noteTime) {
+      return ((noteTime - state.viewStart) / state.secondsPerView) * 100;
+    }
+
+    function renderLaneTicks() {
+      const ticks = [];
+      const step = Math.max(0.5, Math.round((state.secondsPerView / 8) * 2) / 2);
+
+      for (let time = state.viewStart; time <= state.viewStart + state.secondsPerView + 0.001; time += step) {
+        ticks.push(`<div class="lane-tick" style="left:${notePositionPercent(time)}%;">${formatTime(time)}</div>`);
+      }
+
+      return ticks.join('');
+    }
+
+    function renderLaneGridLines() {
+      if (!state.chart) {
+        return '';
+      }
+
+      const beatLength = getBeatLengthSeconds();
+      const snapLength = getSnapLengthSeconds();
+      if (!Number.isFinite(beatLength) || !Number.isFinite(snapLength) || beatLength <= 0 || snapLength <= 0) {
+        return '';
+      }
+
+      const lines = [];
+      const windowEnd = state.viewStart + state.secondsPerView;
+      const firstIndex = Math.floor(state.viewStart / snapLength);
+      const lastIndex = Math.ceil(windowEnd / snapLength);
+
+      for (let index = firstIndex; index <= lastIndex; index += 1) {
+        const time = index * snapLength;
+        if (time < state.viewStart - 0.001 || time > windowEnd + 0.001) {
+          continue;
+        }
+
+        const isBeat = Math.abs((time / beatLength) - Math.round(time / beatLength)) < 0.001;
+        lines.push(`<div class="lane-gridline ${isBeat ? 'beat' : ''}" style="left:${notePositionPercent(time)}%;"></div>`);
+      }
+
+      return lines.join('');
+    }
+
+    function renderLaneRow(laneName, label) {
+      const laneNotes = (state.chart?.notes || [])
+        .filter((note) => noteOccupiesLane(note, laneName));
+      const playheadPercent = getEditorPlayheadPercent();
+
+      const holdSegments = laneNotes
+        .filter((note) => isSustainNote(note) && getNoteEndTime(note) >= state.viewStart && note.time <= state.viewStart + state.secondsPerView)
+        .map((note) => {
+          const segmentStart = Math.max(note.time, state.viewStart);
+          const segmentEnd = Math.min(getNoteEndTime(note), state.viewStart + state.secondsPerView);
+          const left = notePositionPercent(segmentStart);
+          const width = Math.max(0.8, ((segmentEnd - segmentStart) / state.secondsPerView) * 100);
+          const classes = [
+            'lane-hold',
+            laneName === 'lane-2' ? 'lane-2' : '',
+            isNoteSelected(note.id) ? 'selected' : ''
+          ].filter(Boolean).join(' ');
+
+          return `<div class="${classes}" data-note-hold-id="${note.id}" style="left:${left}%; width:${width}%;"></div>`;
+        }).join('');
+
+      const notes = laneNotes
+        .filter((note) => noteOccupiesLane(note, laneName) && noteInCurrentWindow(note))
+        .map((note) => {
+          const classes = [
+            'lane-note',
+            note.type === 'double' ? 'double' : '',
+            laneName === 'lane-2' ? 'lane-2' : '',
+            isNoteSelected(note.id) ? 'selected' : '',
+            note.id === state.draggingNoteId ? 'dragging' : ''
+          ].filter(Boolean).join(' ');
+
+          return `<button class="${classes}" data-note-id="${note.id}" title="${note.type} @ ${formatTime(note.time)}" style="left:${notePositionPercent(note.time)}%;"></button>`;
+        }).join('');
+
+      const endMarkers = laneNotes
+        .filter((note) => isSustainNote(note) && noteOccupiesLane(note, laneName) && noteInCurrentWindow({
+          ...note,
+          time: getNoteEndTime(note)
+        }))
+        .map((note) => {
+          const classes = [
+            'lane-note',
+            'lane-note-end',
+            laneName === 'lane-2' ? 'lane-2' : '',
+            isNoteSelected(note.id) ? 'selected' : ''
+          ].filter(Boolean).join(' ');
+
+          const endTime = getNoteEndTime(note);
+          return `<button class="${classes}" data-note-end-id="${note.id}" title="${note.type} end @ ${formatTime(endTime)}" style="left:${notePositionPercent(endTime)}%;"></button>`;
+        }).join('');
+
+      return `
+        <div class="lane-row">
+          <div class="lane-header">
+            <strong>${label}</strong>
+            <span>${notes ? 'Click a note to edit it' : 'No notes in this window'}</span>
+          </div>
+          <div class="lane-track" data-lane="${laneName}">
+            ${renderLaneGridLines()}
+            <div class="lane-midline"></div>
+            ${playheadPercent === null ? '' : `<div class="lane-playhead" style="left:${playheadPercent}%;"></div>`}
+            ${holdSegments}
+            ${notes}
+            ${endMarkers}
+          </div>
+          <div class="lane-times">${renderLaneTicks()}</div>
+        </div>
+      `;
+    }
+
+    function renderLaneEditor() {
+      if (!state.chart) {
+        laneEditor.innerHTML = '<div class="empty-editor">Import audio first. The two-lane editor will appear here.</div>';
+        return;
+      }
+
+      clampViewStart();
+      laneEditor.innerHTML = `${renderLaneRow('lane-1', 'Lane 1')}${renderLaneRow('lane-2', 'Lane 2')}`;
+
+      for (const button of laneEditor.querySelectorAll('[data-note-id]')) {
+        button.addEventListener('click', (event) => {
+          if (event.ctrlKey || event.metaKey) {
+            toggleNoteSelection(button.dataset.noteId);
+          } else {
+            selectSingleNote(button.dataset.noteId);
+          }
+          renderAll();
+        });
+
+        button.addEventListener('mousedown', (event) => {
+          if (event.button !== 0) {
+            return;
+          }
+
+          if (event.ctrlKey || event.metaKey) {
+            return;
+          }
+
+          event.preventDefault();
+          startNoteDrag(button.dataset.noteId, event);
+        });
+      }
+
+      for (const button of laneEditor.querySelectorAll('[data-note-end-id]')) {
+        button.addEventListener('click', (event) => {
+          event.stopPropagation();
+          if (event.ctrlKey || event.metaKey) {
+            toggleNoteSelection(button.dataset.noteEndId);
+          } else {
+            selectSingleNote(button.dataset.noteEndId);
+          }
+          renderAll();
+        });
+
+        button.addEventListener('mousedown', (event) => {
+          if (event.button !== 0) {
+            return;
+          }
+
+          if (event.ctrlKey || event.metaKey) {
+            return;
+          }
+
+          event.preventDefault();
+          event.stopPropagation();
+          startHoldEndDrag(button.dataset.noteEndId, event);
+        });
+      }
+
+      for (const holdSegment of laneEditor.querySelectorAll('[data-note-hold-id]')) {
+        holdSegment.addEventListener('mousedown', (event) => {
+          if (event.button !== 0) {
+            return;
+          }
+
+          const rect = holdSegment.getBoundingClientRect();
+          const distanceFromRight = rect.right - event.clientX;
+          if (distanceFromRight > 18) {
+            return;
+          }
+
+          event.preventDefault();
+          event.stopPropagation();
+          startHoldEndDrag(holdSegment.dataset.noteHoldId, event);
+        });
+      }
+
+      for (const track of laneEditor.querySelectorAll('.lane-track')) {
+        track.addEventListener('mousedown', (event) => {
+          if (event.button !== 0 || event.target !== track) {
+            return;
+          }
+
+          startSelectionDrag(event);
+        });
+
+        track.addEventListener('dblclick', (event) => {
+          if (event.target !== track) {
+            return;
+          }
+
+          createNoteAtLanePosition(track, event.clientX);
+        });
+      }
+    }
+
+    function renderNoteEditor() {
+      const selectedNotes = getSelectedNotes();
+      const note = selectedNotes.length === 1 ? selectedNotes[0] : null;
+
+      if (selectedNotes.length > 1) {
+        const laneSelect = laneOptions.map((option) => `
+          <option value="${option}">${option}</option>
+        `).join('');
+
+        const typeSelect = typeOptions.map((option) => `
+          <option value="${option}">${option}</option>
+        `).join('');
+
+        const attributeSelect = attributeOptionsByType.tap
+          .concat(attributeOptionsByType.hold, attributeOptionsByType.double, attributeOptionsByType.spinner)
+          .filter((value, index, array) => array.indexOf(value) === index)
+          .map((option) => `<option value="${option}">${option}</option>`)
+          .join('');
+
+        noteEditor.innerHTML = `
+          <h2>Batch Edit</h2>
+          <div class="note-preview">
+            <strong>${selectedNotes.length} notes selected</strong><br>
+            Use this panel to apply the same change to all selected notes.
+          </div>
+          <div class="action-row">
+            <button id="deleteSelectedNotesButton" class="secondary">Delete Selected</button>
+          </div>
+          <div class="editor-grid">
+            <label>
+              Lane
+              <select data-batch-field="lane">
+                <option value="">Keep current</option>
+                ${laneSelect}
+              </select>
+            </label>
+            <label>
+              Type
+              <select data-batch-field="type">
+                <option value="">Keep current</option>
+                ${typeSelect}
+              </select>
+            </label>
+            <label>
+              Attribute
+              <select data-batch-field="attribute">
+                <option value="">Keep current</option>
+                ${attributeSelect}
+              </select>
+            </label>
+          </div>
+        `;
+
+        for (const input of noteEditor.querySelectorAll('[data-batch-field]')) {
+          input.addEventListener('change', handleBatchEditorInput);
+        }
+
+        noteEditor.querySelector('#deleteSelectedNotesButton').addEventListener('click', removeSelectedNote);
+        return;
+      }
+
+      if (!note) {
+        noteEditor.innerHTML = `
+          <h2>Note Definition</h2>
+          <div class="empty-editor">Select a note directly on one of the two lanes to define it. This panel edits the currently selected on-track note.</div>
+        `;
+        return;
+      }
+
+      const laneSelect = laneOptions.map((option) => `
+        <option value="${option}" ${note.lane === option ? 'selected' : ''}>${option}</option>
+      `).join('');
+
+      const typeSelect = typeOptions.map((option) => `
+        <option value="${option}" ${note.type === option ? 'selected' : ''}>${option}</option>
+      `).join('');
+
+      const attributeSelect = getAttributeOptions(note.type).map((option) => `
+        <option value="${option}" ${note.attribute === option ? 'selected' : ''}>${option}</option>
+      `).join('');
+      const noteEndTime = getNoteEndTime(note);
+      const holdFields = isSustainNote(note)
+        ? `
+          <label>
+            End Time
+            <input data-field="endTime" type="number" min="0" step="0.001" value="${noteEndTime}">
+          </label>
+          <label>
+            Hold Length
+            <input data-field="holdLength" type="number" min="0" step="0.001" value="${note.holdLength}">
+          </label>
+        `
+        : '';
+
+      noteEditor.innerHTML = `
+        <h2>Note Definition</h2>
+        <div class="note-preview">
+          <strong>${note.id}</strong><br>
+          Time: ${formatTime(note.time)}<br>
+          End: ${formatTime(noteEndTime)}<br>
+          Lane: ${note.type === 'double' ? 'lane-1 + lane-2' : note.lane}<br>
+          Type: ${note.type}
+        </div>
+        <div class="action-row">
+          <button id="duplicateNoteButton" class="secondary">Duplicate</button>
+          <button id="deleteNoteButton" class="secondary">Delete</button>
+        </div>
+        <div class="editor-grid">
+          <label>
+            Lane
+            <select data-field="lane">${laneSelect}</select>
+          </label>
+          <label>
+            Type
+            <select data-field="type">${typeSelect}</select>
+          </label>
+          <label>
+            Attribute
+            <select data-field="attribute">${attributeSelect}</select>
+          </label>
+          <label>
+            Start Time
+            <input data-field="startTime" type="number" min="0" step="0.001" value="${note.time}">
+          </label>
+          ${holdFields}
+          <label class="full">
+            Comment
+            <textarea data-field="comment" placeholder="Optional note annotation">${note.comment}</textarea>
+          </label>
+        </div>
+      `;
+
+      for (const input of noteEditor.querySelectorAll('[data-field]')) {
+        input.addEventListener('input', handleNoteEditorInput);
+        input.addEventListener('change', handleNoteEditorInput);
+      }
+
+      noteEditor.querySelector('#duplicateNoteButton').addEventListener('click', duplicateSelectedNote);
+      noteEditor.querySelector('#deleteNoteButton').addEventListener('click', removeSelectedNote);
+    }
+
+    function handleNoteEditorInput(event) {
+      const note = selectedNote();
+      if (!note) {
+        return;
+      }
+
+      const field = event.target.dataset.field;
+      if (!field) {
+        return;
+      }
+
+      if (field === 'mirrored' || field === 'critical') {
+        note[field] = event.target.checked;
+      } else if (field === 'holdLength' || field === 'intensity' || field === 'startTime' || field === 'endTime') {
+        const numericValue = Number(event.target.value) || 0;
+        if (field === 'startTime') {
+          const snappedStart = snapTimeToGrid(numericValue);
+          const currentEnd = getNoteEndTime(note);
+          note.time = snappedStart;
+          setNoteEndTime(note, Math.max(currentEnd, snappedStart));
+        } else if (field === 'endTime') {
+          if (!isSustainNote(note)) {
+            note.type = 'hold';
+            note.attribute = 'default';
+          }
+          setNoteEndTime(note, numericValue);
+        } else {
+          note[field] = numericValue;
+        }
+      } else {
+        note[field] = event.target.value;
+        if (field === 'type') {
+          note.attribute = getDefaultAttribute(note.type);
+          ensureHoldConsistency(note);
+        }
+      }
+
+      ensureHoldConsistency(note);
+      sortNotes();
+      renderAll();
+    }
+
+    function handleBatchEditorInput(event) {
+      const notes = getSelectedNotes();
+      if (!notes.length) {
+        return;
+      }
+
+      const field = event.target.dataset.batchField;
+      if (!field) {
+        return;
+      }
+
+      const rawValue = event.target.value;
+      if (rawValue === '') {
+        return;
+      }
+
+      for (const note of notes) {
+        if (field === 'intensity') {
+          note.intensity = Number(rawValue) || 0;
+        } else {
+          note[field] = rawValue;
+          if (field === 'type') {
+            note.attribute = getDefaultAttribute(note.type);
+          }
+        }
+
+        ensureHoldConsistency(note);
+      }
+
+      sortNotes();
+      renderAll();
+    }
+
+    function updateDraggedNote(clientX, clientY) {
+      const note = findNoteById(state.draggingNoteId);
+      if (!note) {
+        return;
+      }
+
+      const hoveredTrack = document.elementFromPoint(clientX, clientY)?.closest('.lane-track');
+      if (!hoveredTrack) {
+        return;
+      }
+
+      const rect = hoveredTrack.getBoundingClientRect();
+      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      note.time = snapTimeToGrid(state.viewStart + ratio * state.secondsPerView);
+      note.lane = hoveredTrack.dataset.lane || note.lane;
+      sortNotes();
+    }
+
+    function updateDraggedHoldEnd(clientX, clientY) {
+      const note = findNoteById(state.draggingHoldEndId);
+      if (!note) {
+        return;
+      }
+
+      const hoveredTrack = document.elementFromPoint(clientX, clientY)?.closest('.lane-track');
+      if (!hoveredTrack) {
+        return;
+      }
+
+      const rect = hoveredTrack.getBoundingClientRect();
+      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      const snappedEnd = snapTimeToGrid(state.viewStart + ratio * state.secondsPerView);
+      note.lane = hoveredTrack.dataset.lane || note.lane;
+      if (!isSustainNote(note)) {
+        note.type = 'hold';
+        note.attribute = 'default';
+      }
+      setNoteEndTime(note, Math.max(snappedEnd, note.time + getSnapLengthSeconds()));
+      sortNotes();
+    }
+
+    function stopNoteDrag() {
+      if (!state.draggingNoteId) {
+        return;
+      }
+
+      state.draggingNoteId = null;
+      document.removeEventListener('mousemove', handleNoteDragMove);
+      document.removeEventListener('mouseup', handleNoteDragEnd);
+      renderAll();
+    }
+
+    function stopHoldEndDrag() {
+      if (!state.draggingHoldEndId) {
+        return;
+      }
+
+      state.draggingHoldEndId = null;
+      document.removeEventListener('mousemove', handleHoldEndDragMove);
+      document.removeEventListener('mouseup', handleHoldEndDragEnd);
+      renderAll();
+    }
+
+    function handleNoteDragMove(event) {
+      if (!state.draggingNoteId) {
+        return;
+      }
+
+      const distance = Math.hypot(event.clientX - state.dragStartClientX, event.clientY - state.dragStartClientY);
+      if (!state.dragMoved && distance < 6) {
+        return;
+      }
+
+      state.dragMoved = true;
+      updateDraggedNote(event.clientX, event.clientY);
+      renderAll();
+    }
+
+    function handleNoteDragEnd() {
+      stopNoteDrag();
+    }
+
+    function handleHoldEndDragMove(event) {
+      if (!state.draggingHoldEndId) {
+        return;
+      }
+
+      const distance = Math.hypot(event.clientX - state.dragStartClientX, event.clientY - state.dragStartClientY);
+      if (!state.dragMoved && distance < 6) {
+        return;
+      }
+
+      state.dragMoved = true;
+      updateDraggedHoldEnd(event.clientX, event.clientY);
+      renderAll();
+    }
+
+    function handleHoldEndDragEnd() {
+      stopHoldEndDrag();
+    }
+
+    function startNoteDrag(noteId, event) {
+      selectSingleNote(noteId);
+      state.draggingNoteId = noteId;
+      state.dragStartClientX = event.clientX;
+      state.dragStartClientY = event.clientY;
+      state.dragMoved = false;
+      document.addEventListener('mousemove', handleNoteDragMove);
+      document.addEventListener('mouseup', handleNoteDragEnd);
+      renderAll();
+    }
+
+    function startHoldEndDrag(noteId, event) {
+      selectSingleNote(noteId);
+      state.draggingHoldEndId = noteId;
+      state.dragStartClientX = event.clientX;
+      state.dragStartClientY = event.clientY;
+      state.dragMoved = false;
+      document.addEventListener('mousemove', handleHoldEndDragMove);
+      document.addEventListener('mouseup', handleHoldEndDragEnd);
+      renderAll();
+    }
+
+    function duplicateSelectedNote() {
+      const note = selectedNote();
+      if (!note || !state.chart) {
+        return;
+      }
+
+      const duplicate = normalizeNote({
+        ...note,
+        id: `note-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+        time: snapTimeToGrid(note.time + getSnapLengthSeconds())
+      });
+
+      state.chart.notes.push(duplicate);
+      sortNotes();
+      selectSingleNote(duplicate.id);
+      state.viewStart = Math.max(0, duplicate.time - state.secondsPerView / 2);
+      clampViewStart();
+      renderAll();
+    }
+
+    function setSelectedNoteStartToPlayhead() {
+      const note = selectedNote();
+      if (!note) {
+        return;
+      }
+
+      const snappedStart = snapTimeToGrid(audioPlayer.currentTime || 0);
+      const currentEnd = getNoteEndTime(note);
+      note.time = snappedStart;
+      setNoteEndTime(note, Math.max(currentEnd, snappedStart));
+      sortNotes();
+      renderAll();
+    }
+
+    function setSelectedNoteEndToPlayhead() {
+      const note = selectedNote();
+      if (!note) {
+        return;
+      }
+
+      if (!isSustainNote(note)) {
+        note.type = 'hold';
+        note.attribute = 'default';
+      }
+      setNoteEndTime(note, audioPlayer.currentTime || note.time);
+      sortNotes();
+      renderAll();
+    }
+
+    function renderAll() {
+      syncMetadataInputs();
+      syncSelectedNotePill();
+      updateTimePill();
+      renderLaneEditor();
+      renderNoteEditor();
+      drawWaveform();
+    }
+
+    function updateMetadataFromInputs() {
+      if (!state.chart) {
+        return;
+      }
+
+      state.chart.metadata.title = titleInput.value.trim();
+      state.chart.metadata.artist = artistInput.value.trim();
+      state.chart.metadata.bpm = Number(bpmInput.value) || 120;
+      state.chart.metadata.snapDivision = Number(snapDivisionSelect.value) || 4;
+      syncMetadataInputs();
+    }
+
+    async function loadChartIntoSession(chart, nextChartPath) {
+      state.chart = chart;
+      state.chart.notes = (state.chart.notes || []).map(normalizeNote);
+      state.chart.metadata = {
+        ...state.chart.metadata,
+        snapDivision: Number(state.chart.metadata?.snapDivision || 4)
+      };
+      state.chartPath = nextChartPath;
+      setSelectedNotes([]);
+      state.waveform = [];
+      state.duration = 0;
+      state.analysisChannelData = null;
+      state.analysisSampleRate = 0;
+      state.viewStart = 0;
+
+      audioPlayer.pause();
+      audioPlayer.currentTime = 0;
+
+      const oggFilePath = state.chart.metadata?.oggPath;
+      if (oggFilePath) {
+        audioPlayer.src = pathToFileURL(oggFilePath).href;
+        await loadWaveformFromOgg(oggFilePath);
+        if ((state.chart.notes || []).length === 0) {
+          applyDetectedBpm();
+        }
+      } else {
+        audioPlayer.removeAttribute('src');
+      }
+
+      renderAll();
+    }
+
+    function createNoteAtCurrentTime() {
+      if (!state.chart) {
+        return;
+      }
+
+      const note = {
+        id: `note-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+        time: snapTimeToGrid(audioPlayer.currentTime || 0),
+        lane: 'lane-1',
+        type: 'tap',
+        attribute: 'small',
+        holdLength: 0,
+        intensity: 1,
+        mirrored: false,
+        critical: false,
+        comment: ''
+      };
+
+      state.chart.notes.push(normalizeNote(note));
+      sortNotes();
+      selectSingleNote(note.id);
+      state.viewStart = Math.max(0, note.time - state.secondsPerView / 2);
+      clampViewStart();
+      renderAll();
+    }
+
+    function createNoteAtLanePosition(trackElement, clientX) {
+      if (!state.chart || !trackElement) {
+        return;
+      }
+
+      const rect = trackElement.getBoundingClientRect();
+      const ratio = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width));
+      const noteTime = snapTimeToGrid(state.viewStart + ratio * state.secondsPerView);
+      const lane = trackElement.dataset.lane || 'lane-1';
+
+      const note = {
+        id: `note-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+        time: noteTime,
+        lane,
+        type: 'tap',
+        attribute: 'small',
+        holdLength: 0,
+        intensity: 1,
+        mirrored: false,
+        critical: false,
+        comment: ''
+      };
+
+      state.chart.notes.push(normalizeNote(note));
+      sortNotes();
+      selectSingleNote(note.id);
+      renderAll();
+    }
+
+    function beginTapCapture(key) {
+      if (!state.chart || state.pressedKeys[key]) {
+        return;
+      }
+
+      state.pressedKeys[key] = {
+        rawStartTime: audioPlayer.currentTime || 0,
+        startTime: snapTimeToGrid(audioPlayer.currentTime || 0)
+      };
+    }
+
+    function finishTapCapture(key) {
+      const capture = state.pressedKeys[key];
+      delete state.pressedKeys[key];
+
+      if (!state.chart || !capture) {
+        return;
+      }
+
+      const rawReleaseTime = audioPlayer.currentTime || 0;
+      const rawDuration = Math.max(0, Number((rawReleaseTime - capture.rawStartTime).toFixed(4)));
+      const minHoldDuration = getHoldThresholdSeconds();
+      const snappedReleaseTime = snapTimeToGrid(rawReleaseTime);
+      const snappedHoldLength = Math.max(0, Number((snappedReleaseTime - capture.startTime).toFixed(4)));
+      const isHold = rawDuration >= minHoldDuration && snappedHoldLength > 0;
+
+      const note = {
+        id: `note-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+        time: capture.startTime,
+        lane: 'lane-1',
+        type: isHold ? 'hold' : 'tap',
+        attribute: isHold ? 'default' : 'small',
+        holdLength: isHold ? snappedHoldLength : 0,
+        intensity: 1,
+        mirrored: false,
+        critical: false,
+        comment: ''
+      };
+
+      state.chart.notes.push(normalizeNote(note));
+      sortNotes();
+      selectSingleNote(note.id);
+      state.viewStart = Math.max(0, note.time - state.secondsPerView / 2);
+      clampViewStart();
+      renderAll();
+    }
+
+    function removeSelectedNote() {
+      const selectedIds = new Set(getSelectedNoteIds());
+      if (!state.chart || selectedIds.size === 0) {
+        return;
+      }
+
+      state.chart.notes = state.chart.notes.filter((note) => !selectedIds.has(note.id));
+      setSelectedNotes([]);
+      renderAll();
+    }
+
+    function updateSelectionBox() {
+      const selection = state.selectionDrag;
+      if (!selection) {
+        selectionBox.hidden = true;
+        return;
+      }
+
+      const left = Math.min(selection.startX, selection.currentX);
+      const top = Math.min(selection.startY, selection.currentY);
+      const width = Math.abs(selection.currentX - selection.startX);
+      const height = Math.abs(selection.currentY - selection.startY);
+
+      selectionBox.hidden = false;
+      selectionBox.style.left = `${left}px`;
+      selectionBox.style.top = `${top}px`;
+      selectionBox.style.width = `${width}px`;
+      selectionBox.style.height = `${height}px`;
+    }
+
+    function collectSelectedNotesFromBox() {
+      const selection = state.selectionDrag;
+      if (!selection) {
+        return [];
+      }
+
+      const left = Math.min(selection.startClientX, selection.currentClientX);
+      const right = Math.max(selection.startClientX, selection.currentClientX);
+      const top = Math.min(selection.startClientY, selection.currentClientY);
+      const bottom = Math.max(selection.startClientY, selection.currentClientY);
+      const noteIds = new Set();
+
+      for (const button of laneEditor.querySelectorAll('[data-note-id]')) {
+        const rect = button.getBoundingClientRect();
+        const intersects = rect.right >= left && rect.left <= right && rect.bottom >= top && rect.top <= bottom;
+        if (intersects) {
+          noteIds.add(button.dataset.noteId);
+        }
+      }
+
+      return Array.from(noteIds);
+    }
+
+    function startSelectionDrag(event) {
+      if (!state.chart) {
+        return;
+      }
+
+      const scrollRect = selectionBox.parentElement.getBoundingClientRect();
+      state.selectionDrag = {
+        startX: event.clientX - scrollRect.left + selectionBox.parentElement.scrollLeft,
+        startY: event.clientY - scrollRect.top + selectionBox.parentElement.scrollTop,
+        currentX: event.clientX - scrollRect.left + selectionBox.parentElement.scrollLeft,
+        currentY: event.clientY - scrollRect.top + selectionBox.parentElement.scrollTop,
+        startClientX: event.clientX,
+        startClientY: event.clientY,
+        currentClientX: event.clientX,
+        currentClientY: event.clientY
+      };
+      updateSelectionBox();
+      document.addEventListener('mousemove', handleSelectionDragMove);
+      document.addEventListener('mouseup', handleSelectionDragEnd);
+    }
+
+    function handleSelectionDragMove(event) {
+      if (!state.selectionDrag) {
+        return;
+      }
+
+      const scrollRect = selectionBox.parentElement.getBoundingClientRect();
+      state.selectionDrag.currentX = event.clientX - scrollRect.left + selectionBox.parentElement.scrollLeft;
+      state.selectionDrag.currentY = event.clientY - scrollRect.top + selectionBox.parentElement.scrollTop;
+      state.selectionDrag.currentClientX = event.clientX;
+      state.selectionDrag.currentClientY = event.clientY;
+      updateSelectionBox();
+    }
+
+    function handleSelectionDragEnd() {
+      const selectedIds = collectSelectedNotesFromBox();
+      state.selectionDrag = null;
+      updateSelectionBox();
+      document.removeEventListener('mousemove', handleSelectionDragMove);
+      document.removeEventListener('mouseup', handleSelectionDragEnd);
+      setSelectedNotes(selectedIds);
+      renderAll();
+    }
+
+    async function saveChart() {
+      if (!state.chart || !state.chartPath) {
+        return;
+      }
+
+      updateMetadataFromInputs();
+      await ipcRenderer.invoke('chart:save', {
+        chartPath: state.chartPath,
+        chart: state.chart
+      });
+
+      setStatus(`Chart saved.\n${state.chartPath}`, 'ok');
+    }
+
+    function startWaveformLoop() {
+      if (state.renderFrame) {
+        cancelAnimationFrame(state.renderFrame);
+      }
+
+      const render = () => {
+        updatePlaybackFollow();
+        updateTimePill();
+        syncViewportControls();
+        renderLaneEditor();
+        drawWaveform();
+        state.renderFrame = requestAnimationFrame(render);
+      };
+
+      render();
+    }
+
+    async function startPlaybackWithCountdown() {
+      if (!state.chart) {
+        return;
+      }
+
+      if (!audioPlayer.paused) {
+        focusEditorForTapping();
+        return;
+      }
+
+      const countdownToken = Date.now();
+      state.playCountdownToken = countdownToken;
+      playButton.disabled = true;
+      pauseButton.disabled = true;
+
+      for (let count = 3; count >= 1; count -= 1) {
+        if (state.playCountdownToken !== countdownToken) {
+          syncMetadataInputs();
+          return;
+        }
+
+        setStatus(`Playback starts in ${count}...\nGet ready to tap with Z / X.`, 'warn');
+        await sleep(1000);
+      }
+
+      if (state.playCountdownToken !== countdownToken) {
+        syncMetadataInputs();
+        return;
+      }
+
+      focusEditorForTapping();
+      await audioPlayer.play();
+      setStatus('Playback started.\nPress Z / X to tap immediately.', 'ok');
+      syncMetadataInputs();
+    }
+
+    importButton.addEventListener('click', async () => {
+      importButton.disabled = true;
+      setStatus('Importing MP3 and converting to OGG...', 'warn');
+
+      try {
+        const result = await ipcRenderer.invoke('chart:import-mp3');
+
+        if (result.canceled) {
+          setStatus('Import canceled.', 'warn');
+          return;
+        }
+
+        await loadChartIntoSession(result.chart, result.chartPath);
+        const detectedBpm = Number(result.chart?.metadata?.bpm || 0);
+        const bpmLine = detectedBpm > 0 ? `\nAuto-detected BPM: ${detectedBpm}` : '';
+        setStatus(`Audio imported and chart created.\n${result.chartPath}${bpmLine}`, 'ok');
+      } catch (error) {
+        setStatus(`Import failed.\n${error.message}`, 'warn');
+      } finally {
+        importButton.disabled = false;
+      }
+    });
+
+    openButton.addEventListener('click', async () => {
+      try {
+        const result = await ipcRenderer.invoke('chart:open');
+
+        if (result.canceled) {
+          return;
+        }
+
+        await loadChartIntoSession(result.chart, result.chartPath);
+        setStatus(`Chart loaded.\n${result.chartPath}`, 'ok');
+      } catch (error) {
+        setStatus(`Open failed.\n${error.message}`, 'warn');
+      }
+    });
+
+    saveButton.addEventListener('click', saveChart);
+
+    playButton.addEventListener('click', async () => {
+      try {
+        await startPlaybackWithCountdown();
+      } catch (error) {
+        setStatus(`Unable to start playback.\n${error.message}`, 'warn');
+        syncMetadataInputs();
+      }
+    });
+
+    pauseButton.addEventListener('click', () => {
+      state.playCountdownToken = 0;
+      audioPlayer.pause();
+      syncMetadataInputs();
+    });
+
+    tapButton.addEventListener('click', () => {
+      createNoteAtCurrentTime();
+    });
+
+    titleInput.addEventListener('input', updateMetadataFromInputs);
+    artistInput.addEventListener('input', updateMetadataFromInputs);
+    bpmInput.addEventListener('input', updateMetadataFromInputs);
+    snapDivisionSelect.addEventListener('change', () => {
+      if (!state.chart) {
+        return;
+      }
+
+      state.chart.metadata.snapDivision = Number(snapDivisionSelect.value) || 4;
+      state.chart.notes = state.chart.notes.map((note) => ({
+        ...note,
+        time: snapTimeToGrid(note.time)
+      }));
+      sortNotes();
+      renderAll();
+    });
+
+    audioPlayer.addEventListener('loadedmetadata', () => {
+      state.duration = audioPlayer.duration || state.duration;
+      renderAll();
+    });
+
+    audioPlayer.addEventListener('timeupdate', updateTimePill);
+    audioPlayer.addEventListener('play', () => {
+      focusEditorForTapping();
+      startWaveformLoop();
+    });
+    audioPlayer.addEventListener('pause', () => {
+      state.playCountdownToken = 0;
+      if (state.renderFrame) {
+        cancelAnimationFrame(state.renderFrame);
+        state.renderFrame = null;
+      }
+      renderAll();
+    });
+
+    waveformCanvas.addEventListener('click', (event) => {
+      if (!state.chart) {
+        return;
+      }
+
+      const rect = waveformCanvas.getBoundingClientRect();
+      const relativeX = ((event.clientX - rect.left) / rect.width) * waveformCanvas.width;
+      audioPlayer.currentTime = xToReviewTime(relativeX);
+      state.viewStart = Math.max(0, audioPlayer.currentTime - state.secondsPerView / 2);
+      clampViewStart();
+      renderAll();
+    });
+
+    timelineSlider.addEventListener('pointerdown', () => {
+      state.activeScrubber = 'timeline';
+    });
+
+    timelineSlider.addEventListener('input', () => {
+      seekFromViewportStart(Number(timelineSlider.value) || 0, state.editorPinnedRatio);
+    });
+
+    reviewSlider.addEventListener('pointerdown', () => {
+      state.activeScrubber = 'review';
+    });
+
+    reviewSlider.addEventListener('input', () => {
+      seekFromViewportStart(Number(reviewSlider.value) || 0, state.reviewPinnedRatio);
+    });
+
+    document.addEventListener('pointerup', () => {
+      state.activeScrubber = '';
+    });
+
+    zoomInput.addEventListener('input', () => {
+      state.secondsPerView = Math.min(30, Math.max(2, Number(zoomInput.value) || 8));
+      clampViewStart();
+      renderAll();
+    });
+
+    window.addEventListener('resize', () => {
+      renderAll();
+    });
+
+    document.addEventListener('keydown', (event) => {
+      const activeTag = document.activeElement?.tagName;
+      if (activeTag === 'INPUT' || activeTag === 'TEXTAREA' || activeTag === 'SELECT') {
+        return;
+      }
+
+      if ((event.key === 'z' || event.key === 'x' || event.key === 'Z' || event.key === 'X') && state.chart) {
+        event.preventDefault();
+        beginTapCapture(event.key.toLowerCase());
+        return;
+      }
+
+      if ((event.key === 'Delete' || event.key === 'Backspace') && getSelectedNoteIds().length > 0) {
+        event.preventDefault();
+        removeSelectedNote();
+        return;
+      }
+
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'd' && getSelectedNoteIds().length === 1) {
+        event.preventDefault();
+        duplicateSelectedNote();
+        return;
+      }
+
+        if (event.key === ' ' && state.chart) {
+          event.preventDefault();
+          if (audioPlayer.paused) {
+            startPlaybackWithCountdown().catch((error) => {
+              setStatus(`Unable to start playback.\n${error.message}`, 'warn');
+              syncMetadataInputs();
+            });
+          } else {
+            state.playCountdownToken = 0;
+            audioPlayer.pause();
+            syncMetadataInputs();
+          }
+        }
+
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 's') {
+        event.preventDefault();
+        saveChart();
+      }
+    });
+
+    document.addEventListener('keyup', (event) => {
+      const key = event.key.toLowerCase();
+      if ((key === 'z' || key === 'x') && state.chart) {
+        event.preventDefault();
+        finishTapCapture(key);
+      }
+    });
+
+    renderAll();
+  </script>
+  <script src="export-ui.js"></script>
+</body>
+</html>
+

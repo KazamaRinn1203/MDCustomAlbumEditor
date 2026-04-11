@@ -1,0 +1,33 @@
+# Node / Electron
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Runtime workspace data to keep local
+workspace/audio/
+workspace/covers/
+workspace/demos/
+workspace/exports/
+workspace/electron/
+workspace/*.dll
+workspace/*.zip
+workspace/sample_mdm/
+workspace/tmp-*.js
+
+# Keep chart JSON in Git so another computer can continue editing
+# workspace/charts/ is intentionally tracked
+
+# OS / editor
+.DS_Store
+Thumbs.db
+
+# Local packaging / temp
+build/
+.codex_tmp/
+__renderer_check__.js
+tmp_renderer_check.js
+index.next.html
+main.next.js
+PROJECT_MEMORY.md
