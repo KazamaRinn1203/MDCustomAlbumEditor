@@ -6,6 +6,7 @@ yarn-error.log*
 pnpm-debug.log*
 
 # Runtime workspace data to keep local
+workspace/charts/
 workspace/audio/
 workspace/covers/
 workspace/demos/
@@ -15,9 +16,6 @@ workspace/*.dll
 workspace/*.zip
 workspace/sample_mdm/
 workspace/tmp-*.js
-
-# Keep chart JSON in Git so another computer can continue editing
-# workspace/charts/ is intentionally tracked
 
 # OS / editor
 .DS_Store
