@@ -266,8 +266,6 @@
 
     const crop = computeCoverCrop(currentCoverImage, exportSettings);
     coverPreviewContext.clearRect(0, 0, coverPreview.width, coverPreview.height);
-    coverPreviewContext.fillStyle = '#fff8f1';
-    coverPreviewContext.fillRect(0, 0, coverPreview.width, coverPreview.height);
     coverPreviewContext.save();
     coverPreviewContext.beginPath();
     coverPreviewContext.arc(
@@ -291,17 +289,6 @@
       coverPreview.height
     );
     coverPreviewContext.restore();
-    coverPreviewContext.strokeStyle = 'rgba(255, 255, 255, 0.85)';
-    coverPreviewContext.lineWidth = 8;
-    coverPreviewContext.beginPath();
-    coverPreviewContext.arc(
-      coverPreview.width / 2,
-      coverPreview.height / 2,
-      Math.min(coverPreview.width, coverPreview.height) / 2 - 6,
-      0,
-      Math.PI * 2
-    );
-    coverPreviewContext.stroke();
   }
 
   function resetCoverFraming() {
@@ -378,23 +365,21 @@
     }
 
     const metadata = state.chart.metadata || (state.chart.metadata = {});
-    const current = metadata.export || {};
-    metadata.export = {
-      coverSourcePath: typeof current.coverSourcePath === 'string' ? current.coverSourcePath : '',
-      coverPngPath: typeof current.coverPngPath === 'string' ? current.coverPngPath : '',
-      coverScale: Number.isFinite(Number(current.coverScale)) ? Number(current.coverScale) : 1,
-      coverOffsetX: Number.isFinite(Number(current.coverOffsetX)) ? Number(current.coverOffsetX) : 0,
-      coverOffsetY: Number.isFinite(Number(current.coverOffsetY)) ? Number(current.coverOffsetY) : 0,
-      demoOggPath: typeof current.demoOggPath === 'string' ? current.demoOggPath : '',
-      demoStart: Number.isFinite(Number(current.demoStart)) ? Number(current.demoStart) : 0,
-      demoDuration: Number.isFinite(Number(current.demoDuration)) ? Number(current.demoDuration) : 7,
-      scene: String(current.scene || 'scene_01'),
-      levelDesigner: String(current.levelDesigner || metadata.artist || 'Chart Lab'),
-      difficultyName: String(current.difficultyName || '1'),
-      searchTags: String(current.searchTags || 'custom')
-    };
+    const current = metadata.export || (metadata.export = {});
+    current.coverSourcePath = typeof current.coverSourcePath === 'string' ? current.coverSourcePath : '';
+    current.coverPngPath = typeof current.coverPngPath === 'string' ? current.coverPngPath : '';
+    current.coverScale = Number.isFinite(Number(current.coverScale)) ? Number(current.coverScale) : 1;
+    current.coverOffsetX = Number.isFinite(Number(current.coverOffsetX)) ? Number(current.coverOffsetX) : 0;
+    current.coverOffsetY = Number.isFinite(Number(current.coverOffsetY)) ? Number(current.coverOffsetY) : 0;
+    current.demoOggPath = typeof current.demoOggPath === 'string' ? current.demoOggPath : '';
+    current.demoStart = Number.isFinite(Number(current.demoStart)) ? Number(current.demoStart) : 0;
+    current.demoDuration = Number.isFinite(Number(current.demoDuration)) ? Number(current.demoDuration) : 7;
+    current.scene = String(current.scene || 'scene_01');
+    current.levelDesigner = String(current.levelDesigner || metadata.artist || 'Chart Lab');
+    current.difficultyName = String(current.difficultyName || '1');
+    current.searchTags = String(current.searchTags || 'custom');
 
-    return metadata.export;
+    return current;
   }
 
   function updateExportSettingsFromInputs() {

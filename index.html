@@ -316,6 +316,7 @@
       top: 50%;
       border-top: 2px dashed rgba(148, 163, 184, 0.24);
       transform: translateY(-50%);
+      pointer-events: none;
     }
 
     .lane-gridline {
@@ -324,6 +325,7 @@
       bottom: 0;
       width: 1px;
       background: rgba(148, 163, 184, 0.25);
+      pointer-events: none;
     }
 
     .lane-gridline.beat {
@@ -560,12 +562,12 @@
     <aside class="panel sidebar">
       <div>
         <h1>Muse Dash Custom Album Editor</h1>
-        <p class="muted">Phase 1 MVP: import MP3, convert to OGG, view waveform, tap notes with two keys on one timing lane, and save a chart JSON for later note definition.</p>
+        <p class="muted">Import MP3 or existing MDM packages, edit notes and assets, then export a playable custom album package.</p>
       </div>
 
       <div class="button-row">
         <button id="importButton">Import MP3</button>
-        <button id="openButton" class="secondary">Open Chart</button>
+        <button id="openButton" class="secondary">Open Chart / MDM</button>
         <button id="saveButton" class="secondary" disabled>Save Chart</button>
         <button id="exportButton" class="secondary" disabled>Export MDM</button>
       </div>
@@ -607,7 +609,7 @@
         <h2>Workspace Files</h2>
         <p class="muted">Audio OGG</p>
         <p id="oggPath" class="mono muted">No audio imported yet.</p>
-        <p class="muted" style="margin-top: 12px;">Chart JSON</p>
+        <p class="muted" style="margin-top: 12px;">Editable Chart JSON</p>
         <p id="chartPath" class="mono muted">No chart saved yet.</p>
       </section>
 
@@ -720,6 +722,7 @@
       playCountdownToken: 0,
       activeScrubber: '',
       selectionDrag: null,
+      lastBlankTrackClick: null,
       draggingNoteId: null,
       draggingHoldEndId: null,
       dragStartClientX: 0,
@@ -1571,19 +1574,20 @@
 
       for (const track of laneEditor.querySelectorAll('.lane-track')) {
         track.addEventListener('mousedown', (event) => {
-          if (event.button !== 0 || event.target !== track) {
+          if (event.button !== 0) {
             return;
           }
 
-          startSelectionDrag(event);
-        });
-
-        track.addEventListener('dblclick', (event) => {
-          if (event.target !== track) {
+          if (event.target.closest('[data-note-id], [data-note-end-id], [data-note-hold-id]')) {
             return;
           }
 
-          createNoteAtLanePosition(track, event.clientX);
+          const clickedTrack = event.target.closest('.lane-track');
+          if (clickedTrack !== track) {
+            return;
+          }
+
+          startSelectionDrag(event, track);
         });
       }
     }
@@ -2144,7 +2148,7 @@
 
     function updateSelectionBox() {
       const selection = state.selectionDrag;
-      if (!selection) {
+      if (!selection || !selection.moved) {
         selectionBox.hidden = true;
         return;
       }
@@ -2163,7 +2167,7 @@
 
     function collectSelectedNotesFromBox() {
       const selection = state.selectionDrag;
-      if (!selection) {
+      if (!selection || !selection.moved) {
         return [];
       }
 
@@ -2184,13 +2188,14 @@
       return Array.from(noteIds);
     }
 
-    function startSelectionDrag(event) {
+    function startSelectionDrag(event, track) {
       if (!state.chart) {
         return;
       }
 
       const scrollRect = selectionBox.parentElement.getBoundingClientRect();
       state.selectionDrag = {
+        lane: track?.dataset.lane || '',
         startX: event.clientX - scrollRect.left + selectionBox.parentElement.scrollLeft,
         startY: event.clientY - scrollRect.top + selectionBox.parentElement.scrollTop,
         currentX: event.clientX - scrollRect.left + selectionBox.parentElement.scrollLeft,
@@ -2198,7 +2203,8 @@
         startClientX: event.clientX,
         startClientY: event.clientY,
         currentClientX: event.clientX,
-        currentClientY: event.clientY
+        currentClientY: event.clientY,
+        moved: false
       };
       updateSelectionBox();
       document.addEventListener('mousemove', handleSelectionDragMove);
@@ -2215,15 +2221,54 @@
       state.selectionDrag.currentY = event.clientY - scrollRect.top + selectionBox.parentElement.scrollTop;
       state.selectionDrag.currentClientX = event.clientX;
       state.selectionDrag.currentClientY = event.clientY;
+      const movedDistance = Math.hypot(
+        state.selectionDrag.currentClientX - state.selectionDrag.startClientX,
+        state.selectionDrag.currentClientY - state.selectionDrag.startClientY
+      );
+      if (!state.selectionDrag.moved && movedDistance >= 6) {
+        state.selectionDrag.moved = true;
+      }
       updateSelectionBox();
     }
 
-    function handleSelectionDragEnd() {
+    function handleSelectionDragEnd(event) {
+      const selection = state.selectionDrag;
       const selectedIds = collectSelectedNotesFromBox();
       state.selectionDrag = null;
       updateSelectionBox();
       document.removeEventListener('mousemove', handleSelectionDragMove);
       document.removeEventListener('mouseup', handleSelectionDragEnd);
+      if (!selection) {
+        return;
+      }
+
+      if (!selection.moved) {
+        const clickedTrack = laneEditor.querySelector(`.lane-track[data-lane="${selection.lane}"]`);
+        const lastClick = state.lastBlankTrackClick;
+        const timeDelta = lastClick ? event.timeStamp - lastClick.timeStamp : Number.POSITIVE_INFINITY;
+        const positionDelta = lastClick
+          ? Math.hypot(event.clientX - lastClick.clientX, event.clientY - lastClick.clientY)
+          : Number.POSITIVE_INFINITY;
+        const sameLane = lastClick?.lane === selection.lane;
+
+        if (clickedTrack && sameLane && timeDelta <= 360 && positionDelta <= 18) {
+          state.lastBlankTrackClick = null;
+          createNoteAtLanePosition(clickedTrack, event.clientX);
+          return;
+        }
+
+        state.lastBlankTrackClick = {
+          lane: selection.lane,
+          clientX: event.clientX,
+          clientY: event.clientY,
+          timeStamp: event.timeStamp
+        };
+        setSelectedNotes([]);
+        renderAll();
+        return;
+      }
+
+      state.lastBlankTrackClick = null;
       setSelectedNotes(selectedIds);
       renderAll();
     }
@@ -2327,7 +2372,7 @@
         }
 
         await loadChartIntoSession(result.chart, result.chartPath);
-        setStatus(`Chart loaded.\n${result.chartPath}`, 'ok');
+        setStatus(`${result.importedFromMdm ? 'MDM imported for editing' : 'Chart loaded'}.\n${result.chartPath}`, 'ok');
       } catch (error) {
         setStatus(`Open failed.\n${error.message}`, 'warn');
       }

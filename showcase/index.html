@@ -6,41 +6,39 @@
   <title>Muse Dash Custom Album Editor</title>
   <style>
     :root {
-      --bg: #f6efe8;
-      --panel: rgba(255, 249, 243, 0.88);
-      --ink: #2f241d;
-      --muted: #6b5d53;
-      --line: rgba(110, 89, 73, 0.16);
-      --accent: #d9485f;
-      --accent-soft: #f7b0b8;
-      --gold: #f0b35e;
-      --shadow: 0 24px 60px rgba(77, 45, 24, 0.12);
+      --bg: #f7efe6;
+      --panel: rgba(255, 250, 245, 0.9);
+      --ink: #2d241d;
+      --muted: #6b5a4c;
+      --line: rgba(106, 83, 63, 0.16);
+      --accent: #d84b63;
+      --gold: #f2b567;
+      --teal: #5db2a4;
+      --shadow: 0 28px 70px rgba(83, 49, 30, 0.14);
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
       font-family: "Segoe UI", sans-serif;
       color: var(--ink);
       background:
-        radial-gradient(circle at top left, rgba(240, 179, 94, 0.24), transparent 28%),
-        radial-gradient(circle at top right, rgba(217, 72, 95, 0.16), transparent 26%),
-        linear-gradient(180deg, #fff8f2, var(--bg));
+        radial-gradient(circle at 12% 10%, rgba(242, 181, 103, 0.28), transparent 24%),
+        radial-gradient(circle at 88% 6%, rgba(216, 75, 99, 0.18), transparent 22%),
+        radial-gradient(circle at 82% 72%, rgba(93, 178, 164, 0.14), transparent 24%),
+        linear-gradient(180deg, #fff9f4, var(--bg));
     }
 
     main {
-      width: min(1100px, calc(100% - 32px));
+      width: min(1180px, calc(100% - 32px));
       margin: 0 auto;
-      padding: 48px 0 72px;
+      padding: 32px 0 72px;
       display: grid;
-      gap: 24px;
+      gap: 22px;
     }
 
-    .hero,
-    .panel {
+    section, .card {
       background: var(--panel);
       border: 1px solid var(--line);
       border-radius: 28px;
@@ -48,200 +46,365 @@
       backdrop-filter: blur(10px);
     }
 
-    .hero {
-      padding: 36px;
-      display: grid;
-      gap: 20px;
-    }
-
-    .eyebrow {
-      color: var(--accent);
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      font-size: 12px;
-    }
-
-    h1,
-    h2 {
-      margin: 0;
-      line-height: 1.05;
-    }
-
-    h1 {
-      font-size: clamp(34px, 6vw, 68px);
-      max-width: 760px;
-    }
-
-    p {
-      margin: 0;
-      color: var(--muted);
-      line-height: 1.7;
-      font-size: 16px;
-    }
-
-    .hero-grid,
-    .feature-grid,
-    .meta-grid {
-      display: grid;
-      gap: 16px;
-    }
-
-    .hero-grid {
-      grid-template-columns: 1.3fr 0.9fr;
-      align-items: stretch;
-    }
-
-    .feature-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
-    .meta-grid {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-
-    .panel {
-      padding: 24px;
+    .hero, .card {
+      padding: 26px;
       display: grid;
       gap: 14px;
     }
 
-    .feature {
-      padding: 18px;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.58);
-      border: 1px solid rgba(110, 89, 73, 0.1);
+    .eyebrow {
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      font-size: 12px;
+      font-weight: 800;
     }
 
-    .feature h3 {
-      margin: 0 0 8px;
-      font-size: 18px;
+    .hero-grid, .stats, .feature-grid, .flow-grid, .impact-grid, .app-grid {
+      display: grid;
+      gap: 16px;
     }
 
-    .tag-row {
+    .hero-grid { grid-template-columns: 1.1fr 0.9fr; align-items: start; }
+    .stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .feature-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .flow-grid, .impact-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .app-grid { grid-template-columns: 260px 1fr 280px; min-height: 430px; }
+
+    h1, h2, h3 { margin: 0; line-height: 1.05; }
+    h1 { font-size: clamp(38px, 6vw, 74px); max-width: 760px; }
+    h2 { font-size: clamp(24px, 3vw, 34px); }
+    h3 { font-size: 18px; }
+
+    p {
+      margin: 0;
+      color: var(--muted);
+      line-height: 1.72;
+      font-size: 16px;
+    }
+
+    .lede { max-width: 760px; font-size: 18px; }
+
+    .tag-row, .cta-row, .toolbar {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
     }
 
-    .tag {
-      padding: 8px 12px;
+    .tag, .pill, .cta {
+      padding: 9px 13px;
       border-radius: 999px;
-      background: rgba(217, 72, 95, 0.1);
-      color: var(--accent);
-      font-weight: 600;
       font-size: 13px;
+      font-weight: 700;
     }
 
-    .stat {
-      padding: 18px;
+    .tag {
+      background: rgba(216, 75, 99, 0.1);
+      color: var(--accent);
+      border: 1px solid rgba(216, 75, 99, 0.12);
+    }
+
+    .cta {
+      text-decoration: none;
+      color: var(--ink);
+      background: rgba(255,255,255,0.88);
+      border: 1px solid rgba(106, 83, 63, 0.08);
+    }
+
+    .cta.primary, .pill.primary {
+      background: linear-gradient(135deg, var(--accent), #ef7082);
+      color: white;
+      border: 0;
+    }
+
+    .stat, .feature, .flow-step, .impact, .pane, .mini-card, .field, .timeline-chip {
       border-radius: 20px;
-      background: linear-gradient(180deg, rgba(255,255,255,0.72), rgba(255,244,236,0.88));
-      border: 1px solid rgba(110, 89, 73, 0.1);
+      border: 1px solid rgba(106, 83, 63, 0.08);
+      background: rgba(255,255,255,0.76);
+    }
+
+    .stat, .feature, .flow-step, .impact, .pane {
+      padding: 18px;
+      display: grid;
+      gap: 8px;
     }
 
     .stat strong {
       display: block;
-      font-size: 28px;
+      font-size: 30px;
       margin-bottom: 6px;
     }
 
-    .cta {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      width: fit-content;
-      padding: 12px 18px;
-      border-radius: 999px;
-      background: linear-gradient(135deg, var(--accent), #ef6d7d);
-      color: white;
-      text-decoration: none;
-      font-weight: 700;
+    .window {
+      padding: 14px;
+      border-radius: 24px;
+      background: linear-gradient(180deg, rgba(255,255,255,0.84), rgba(255,244,236,0.94));
+      border: 1px solid rgba(106, 83, 63, 0.1);
+      display: grid;
+      gap: 12px;
     }
 
-    .note {
-      font-size: 14px;
+    .window-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .dots { display: flex; gap: 8px; }
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 999px;
+      background: #f0c79a;
+    }
+    .dot:nth-child(2) { background: #f48d9c; }
+    .dot:nth-child(3) { background: #86c8bc; }
+
+    .window-label, .pane h4, .flow-step strong, .impact strong {
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
       color: var(--muted);
     }
 
-    @media (max-width: 900px) {
-      .hero-grid,
-      .feature-grid,
-      .meta-grid {
-        grid-template-columns: 1fr;
-      }
+    .window-label, .pane h4 { font-size: 12px; font-weight: 700; }
+    .flow-step strong, .impact strong { font-size: 14px; color: var(--accent); }
+
+    .mini-card, .field, .timeline-chip {
+      padding: 12px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    .mini-card { display: grid; gap: 6px; }
+    .field { padding: 11px 12px; }
+
+    .wave-area {
+      border-radius: 20px;
+      overflow: hidden;
+      border: 1px solid rgba(106, 83, 63, 0.08);
+      background: linear-gradient(180deg, rgba(255,255,255,0.92), rgba(255,246,239,0.95));
+      display: grid;
+      gap: 10px;
+      padding: 16px;
+    }
+
+    .timebar {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .wave {
+      position: relative;
+      height: 120px;
+      border-radius: 18px;
+      background:
+        linear-gradient(180deg, rgba(255,255,255,0.96), rgba(255,242,233,0.95)),
+        repeating-linear-gradient(90deg, rgba(106, 83, 63, 0.07) 0, rgba(106, 83, 63, 0.07) 1px, transparent 1px, transparent 40px);
+      overflow: hidden;
+    }
+
+    .wave::before {
+      content: "";
+      position: absolute;
+      inset: 22px 10px;
+      background: linear-gradient(90deg, transparent 0%, rgba(93, 178, 164, 0.34) 8%, rgba(216, 75, 99, 0.34) 18%, rgba(93, 178, 164, 0.3) 30%, rgba(216, 75, 99, 0.24) 45%, rgba(93, 178, 164, 0.3) 62%, rgba(216, 75, 99, 0.28) 78%, transparent 100%);
+      clip-path: polygon(0% 48%, 2% 42%, 4% 53%, 7% 33%, 10% 60%, 13% 24%, 16% 66%, 19% 38%, 22% 51%, 25% 28%, 28% 70%, 31% 35%, 34% 57%, 37% 31%, 40% 63%, 43% 43%, 46% 53%, 49% 29%, 52% 58%, 55% 36%, 58% 68%, 61% 30%, 64% 55%, 67% 34%, 70% 66%, 73% 42%, 76% 56%, 79% 31%, 82% 62%, 85% 27%, 88% 60%, 91% 41%, 94% 53%, 97% 36%, 100% 48%, 100% 52%, 97% 64%, 94% 47%, 91% 59%, 88% 40%, 85% 73%, 82% 38%, 79% 69%, 76% 44%, 73% 58%, 70% 34%, 67% 66%, 64% 45%, 61% 70%, 58% 32%, 55% 64%, 52% 42%, 49% 71%, 46% 47%, 43% 57%, 40% 37%, 37% 69%, 34% 43%, 31% 65%, 28% 30%, 25% 72%, 22% 49%, 19% 62%, 16% 34%, 13% 76%, 10% 39%, 7% 67%, 4% 46%, 2% 58%, 0% 52%);
+    }
+
+    .lanes { display: grid; gap: 10px; }
+
+    .lane {
+      position: relative;
+      height: 64px;
+      border-radius: 18px;
+      border: 1px solid rgba(106, 83, 63, 0.08);
+      background:
+        repeating-linear-gradient(90deg, rgba(106, 83, 63, 0.06) 0, rgba(106, 83, 63, 0.06) 1px, transparent 1px, transparent 56px),
+        linear-gradient(180deg, rgba(255,255,255,0.94), rgba(255,245,238,0.92));
+      overflow: hidden;
+    }
+
+    .lane-label {
+      position: absolute;
+      left: 12px;
+      top: 10px;
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--muted);
+      text-transform: uppercase;
+    }
+
+    .note {
+      position: absolute;
+      top: 24px;
+      width: 18px;
+      height: 18px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), #f07f90);
+      box-shadow: 0 8px 20px rgba(216, 75, 99, 0.24);
+    }
+
+    .note.gold {
+      background: linear-gradient(135deg, var(--gold), #f6ca88);
+      box-shadow: 0 8px 20px rgba(242, 181, 103, 0.22);
+    }
+
+    .hold {
+      position: absolute;
+      top: 27px;
+      height: 12px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, rgba(93, 178, 164, 0.9), rgba(93, 178, 164, 0.44));
+    }
+
+    .side-stack { display: grid; gap: 10px; }
+    .footnote { font-size: 13px; color: var(--muted); }
+    code { font-family: Consolas, monospace; font-size: 0.95em; }
+
+    @media (max-width: 980px) {
+      .hero-grid, .stats, .feature-grid, .flow-grid, .impact-grid, .app-grid { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <main>
     <section class="hero">
-      <div class="eyebrow">Resume Showcase</div>
-      <h1>Muse Dash Custom Album Editor</h1>
-      <p>
-        A desktop chart editor for Muse Dash custom content, focused on speeding up note authoring,
-        asset preparation, and packaging into game-ready <code>.mdm</code> files.
-      </p>
-      <div class="tag-row">
-        <span class="tag">Electron</span>
-        <span class="tag">JavaScript</span>
-        <span class="tag">FFmpeg</span>
-        <span class="tag">Audio Tooling</span>
-        <span class="tag">Desktop UX</span>
+      <div class="eyebrow">Resume Project Showcase</div>
+      <div class="hero-grid">
+        <div style="display:grid; gap:18px;">
+          <h1>Muse Dash Custom Album Editor</h1>
+          <p class="lede">
+            A desktop editor for creating Muse Dash custom album charts, with waveform-based note editing,
+            automatic BPM analysis, cover and demo asset generation, and one-click packaging to a game-ready
+            <code>.mdm</code> format.
+          </p>
+          <div class="tag-row">
+            <span class="tag">Electron</span>
+            <span class="tag">JavaScript</span>
+            <span class="tag">FFmpeg</span>
+            <span class="tag">Desktop Tooling</span>
+            <span class="tag">Audio Workflow</span>
+            <span class="tag">Interaction Design</span>
+          </div>
+          <div class="cta-row">
+            <a class="cta primary" href="../README.md">View Project Summary</a>
+            <a class="cta" href="#">Add Live Demo Link Here</a>
+          </div>
+          <p class="footnote">This page is designed to work as a portfolio link even before attaching real screenshots.</p>
+        </div>
+        <div class="stats">
+          <div class="stat"><strong>4</strong><p>Core note families supported in-editor: tap, hold, double, and spinner/burst.</p></div>
+          <div class="stat"><strong>1-Click</strong><p>Exports a complete package including audio, cover, metadata, and chart files.</p></div>
+          <div class="stat"><strong>Desktop</strong><p>Built around local media workflows, direct file access, and creator-friendly iteration speed.</p></div>
+        </div>
       </div>
     </section>
 
-    <section class="hero-grid">
-      <article class="panel">
-        <h2>What It Does</h2>
-        <div class="feature-grid">
-          <div class="feature">
-            <h3>Waveform Charting</h3>
-            <p>Places and edits notes against audio timing with keyboard tapping, snapping, and lane-based authoring.</p>
-          </div>
-          <div class="feature">
-            <h3>Authoring Tools</h3>
-            <p>Supports tap, hold, double, and spinner/burst notes, plus batch editing through multi-selection.</p>
-          </div>
-          <div class="feature">
-            <h3>Asset Generation</h3>
-            <p>Auto-converts imported audio, generates timeline-based demo clips, and builds circular transparent cover art.</p>
-          </div>
-          <div class="feature">
-            <h3>One-Click Packaging</h3>
-            <p>Exports a full `.mdm` package including music, demo, cover, metadata, and BMS content.</p>
-          </div>
+    <section class="card">
+      <h2>Product Snapshot</h2>
+      <p>A visual mockup of the editor interface, included so the project can be presented cleanly on a resume before adding real screenshots or a demo GIF.</p>
+      <div class="window">
+        <div class="window-top">
+          <div class="dots"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="window-label">Muse Dash Custom Album Editor</div>
         </div>
-      </article>
+        <div class="app-grid">
+          <div class="pane">
+            <h4>Project</h4>
+            <div class="mini-card">
+              <strong>Metadata</strong>
+              <div class="field">Title: Custom Album Track</div>
+              <div class="field">Artist: Example Artist</div>
+              <div class="field">BPM: Auto-detected</div>
+            </div>
+            <div class="mini-card">
+              <strong>Playback</strong>
+              <div class="toolbar"><span class="pill">Play</span><span class="pill">Pause</span><span class="pill primary">Tap Note</span></div>
+              <div class="field">Space = Play / Pause</div>
+              <div class="field">Z / X = Keyboard Tapping</div>
+            </div>
+            <div class="mini-card">
+              <strong>Export</strong>
+              <div class="field">Circular cover editor</div>
+              <div class="field">Demo clip preview</div>
+              <div class="field">MDM package output</div>
+            </div>
+          </div>
 
-      <aside class="panel">
-        <h2>Project Impact</h2>
-        <div class="meta-grid">
-          <div class="stat">
-            <strong>Desktop</strong>
-            <p>Built as an Electron application for direct file-system access and local media workflows.</p>
+          <div class="pane">
+            <h4>Timeline Editor</h4>
+            <div class="wave-area">
+              <div class="timebar"><span>00:47.250 / 02:09.118</span><span>8.0s window</span></div>
+              <div class="wave"></div>
+              <div class="lanes">
+                <div class="lane">
+                  <div class="lane-label">Lane 1</div>
+                  <div class="note" style="left: 18%;"></div>
+                  <div class="hold" style="left: 36%; width: 24%;"></div>
+                  <div class="note gold" style="left: 34%;"></div>
+                  <div class="note gold" style="left: 58%;"></div>
+                  <div class="note" style="left: 76%;"></div>
+                </div>
+                <div class="lane">
+                  <div class="lane-label">Lane 2</div>
+                  <div class="note" style="left: 22%;"></div>
+                  <div class="note gold" style="left: 52%;"></div>
+                  <div class="note gold" style="left: 56%;"></div>
+                  <div class="hold" style="left: 66%; width: 18%;"></div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="stat">
-            <strong>End-to-End</strong>
-            <p>Covers import, authoring, preview, asset prep, and export in a single tool.</p>
-          </div>
-          <div class="stat">
-            <strong>Tooling UX</strong>
-            <p>Iterated around practical creator pain points like BPM detection, demo selection, and cover framing.</p>
+
+          <div class="pane">
+            <h4>Editing Tools</h4>
+            <div class="side-stack">
+              <div class="timeline-chip">Double-click empty lane space to create a note</div>
+              <div class="timeline-chip">Marquee-select multiple notes for batch edits</div>
+              <div class="timeline-chip">Double notes render on both lanes while exporting from one source note</div>
+              <div class="timeline-chip">Spinner / burst behaves like a sustained segment with start/end markers</div>
+              <div class="timeline-chip">Cover export supports zoom, pan, reset framing, and circular masking</div>
+            </div>
           </div>
         </div>
-      </aside>
+      </div>
     </section>
 
-    <section class="panel">
+    <section class="card">
+      <h2>What It Solves</h2>
+      <div class="feature-grid">
+        <div class="feature"><h3>Waveform-Based Authoring</h3><p>Lets users place notes against decoded song audio instead of manually typing time values.</p></div>
+        <div class="feature"><h3>Better Editor Ergonomics</h3><p>Improves tapping flow, keyboard controls, drag thresholds, double-note visualization, and batch editing.</p></div>
+        <div class="feature"><h3>Asset Preparation in the Same Tool</h3><p>Generates cover art and demo clips without forcing users into separate image and audio tools.</p></div>
+        <div class="feature"><h3>Game-Ready Packaging</h3><p>Builds the final export package with the files needed for a Muse Dash custom album mod workflow.</p></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Workflow</h2>
+      <div class="flow-grid">
+        <div class="flow-step"><strong>Import</strong><p>Users bring in an MP3, which is converted into an internal OGG source for editing and export.</p></div>
+        <div class="flow-step"><strong>Author</strong><p>Notes are placed and adjusted on a waveform timeline, including hold, double, and spinner/burst behaviors.</p></div>
+        <div class="flow-step"><strong>Package</strong><p>Demo audio, circular cover art, metadata, and BMS output are assembled into a final <code>.mdm</code> package.</p></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Engineering Highlights</h2>
+      <div class="impact-grid">
+        <div class="impact"><strong>Desktop Architecture</strong><p>Used Electron so the editor could work directly with local audio files, cover images, and package output.</p></div>
+        <div class="impact"><strong>Interaction Iteration</strong><p>Refined note creation, dragging, keyboard flow, selection models, and export UX around real creator feedback.</p></div>
+        <div class="impact"><strong>Production-Oriented Tooling</strong><p>Focused on reducing friction across the full pipeline instead of only editing notes in isolation.</p></div>
+      </div>
+    </section>
+
+    <section class="card">
       <h2>Resume Summary</h2>
-      <p>
-        Built a desktop rhythm-game chart editor with automatic BPM analysis, waveform-based note editing,
-        custom cover and demo asset generation, and one-click export to a game-ready package format.
-      </p>
-      <p class="note">
-        If you publish this page later, add a live download link, screenshots, or a short demo GIF here.
-      </p>
+      <p>Built a desktop custom album editor for Muse Dash with automatic BPM analysis, waveform-based note editing, circular cover generation, demo clip authoring, and one-click packaging to a playable mod format.</p>
+      <p class="footnote">Best next step: publish this page on GitHub Pages, Netlify, or Vercel and place that public URL on your resume.</p>
     </section>
   </main>
 </body>

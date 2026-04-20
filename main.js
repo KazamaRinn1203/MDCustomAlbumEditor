@@ -56,7 +56,8 @@ function workspacePaths() {
     coverDir: path.join(root, 'workspace', 'covers'),
     demoDir: path.join(root, 'workspace', 'demos'),
     exportDir: path.join(root, 'workspace', 'exports'),
-    exportTempDir: path.join(root, 'workspace', 'exports', 'tmp')
+    exportTempDir: path.join(root, 'workspace', 'exports', 'tmp'),
+    importTempDir: path.join(root, 'workspace', 'imports', 'tmp')
   };
 }
 
@@ -172,6 +173,7 @@ async function ensureWorkspace() {
   await fs.mkdir(paths.demoDir, { recursive: true });
   await fs.mkdir(paths.exportDir, { recursive: true });
   await fs.mkdir(paths.exportTempDir, { recursive: true });
+  await fs.mkdir(paths.importTempDir, { recursive: true });
 
   return paths;
 }
@@ -239,9 +241,13 @@ async function openChartDocument() {
   await ensureWorkspace();
 
   const { canceled, filePaths } = await dialog.showOpenDialog({
-    title: 'Open Chart JSON',
+    title: 'Open Chart JSON or MDM',
     properties: ['openFile'],
-    filters: [{ name: 'Chart JSON', extensions: ['json'] }],
+    filters: [
+      { name: 'Editable Chart or MDM', extensions: ['json', 'mdm'] },
+      { name: 'Chart JSON', extensions: ['json'] },
+      { name: 'Muse Dash Custom Album', extensions: ['mdm'] }
+    ],
     defaultPath: workspacePaths().chartDir
   });
 
@@ -250,6 +256,10 @@ async function openChartDocument() {
   }
 
   const chartPath = filePaths[0];
+  if (path.extname(chartPath).toLowerCase() === '.mdm') {
+    return importMdmPackage(chartPath);
+  }
+
   const content = await fs.readFile(chartPath, 'utf8');
   const chart = JSON.parse(content);
   chart.metadata = chart.metadata || {};
@@ -259,6 +269,94 @@ async function openChartDocument() {
     canceled: false,
     chartPath,
     chart
+  };
+}
+
+async function copyIfExists(sourcePath, destinationPath) {
+  try {
+    await fs.copyFile(sourcePath, destinationPath);
+    return destinationPath;
+  } catch (error) {
+    if (error.code === 'ENOENT') {
+      return '';
+    }
+
+    throw error;
+  }
+}
+
+async function importMdmPackage(mdmPath) {
+  const paths = await ensureWorkspace();
+  const baseName = path.parse(mdmPath).name;
+  const slug = slugifyFileName(baseName);
+  const stamp = Date.now();
+  const tempDir = path.join(paths.importTempDir, `${slug}-${stamp}`);
+  const safeMdmPath = path.join(paths.importTempDir, `${slug}-${stamp}.mdm`);
+
+  await fs.rm(tempDir, { recursive: true, force: true });
+  await fs.rm(safeMdmPath, { force: true });
+  await fs.mkdir(tempDir, { recursive: true });
+  await fs.copyFile(mdmPath, safeMdmPath);
+  await runProcess('tar', ['-xf', safeMdmPath, '-C', tempDir], 'Unable to extract MDM package.');
+
+  const infoPath = path.join(tempDir, 'info.json');
+  const bmsPath = path.join(tempDir, 'map2.bms');
+  const musicSourcePath = path.join(tempDir, 'music.ogg');
+  const demoSourcePath = path.join(tempDir, 'demo.ogg');
+  const coverSourcePath = path.join(tempDir, 'cover.png');
+  const info = JSON.parse(await fs.readFile(infoPath, 'utf8'));
+  const bmsText = await fs.readFile(bmsPath, 'utf8');
+  const parsedBms = parseBmsDocument(bmsText, Number(info.bpm) || 120);
+  const oggPath = path.join(paths.audioDir, `${slug}-${stamp}.ogg`);
+  const demoOggPath = path.join(paths.demoDir, `${slug}-${stamp}-demo.ogg`);
+  const coverPngPath = path.join(paths.coverDir, `${slug}-${stamp}-cover.png`);
+  const chartPath = path.join(paths.chartDir, `${slug}-${stamp}.json`);
+
+  await fs.copyFile(musicSourcePath, oggPath);
+  const copiedDemoPath = await copyIfExists(demoSourcePath, demoOggPath);
+  const copiedCoverPath = await copyIfExists(coverSourcePath, coverPngPath);
+
+  const metadata = {
+    title: String(info.name || parsedBms.metadata.title || baseName),
+    artist: String(info.author || parsedBms.metadata.artist || ''),
+    bpm: Number(info.bpm || parsedBms.metadata.bpm || 120),
+    importedAt: new Date().toISOString(),
+    sourceMdmPath: mdmPath,
+    oggPath,
+    export: normalizeExportSettings({
+      metadata: {
+        artist: String(info.author || parsedBms.metadata.artist || ''),
+        export: {
+          coverSourcePath: copiedCoverPath,
+          coverPngPath: copiedCoverPath,
+          coverScale: 1,
+          coverOffsetX: 0,
+          coverOffsetY: 0,
+          demoOggPath: copiedDemoPath,
+          demoStart: 0,
+          demoDuration: 7,
+          scene: String(info.scene || parsedBms.metadata.scene || 'scene_01'),
+          levelDesigner: String(info.levelDesigner || parsedBms.metadata.levelDesigner || 'Chart Lab'),
+          difficultyName: String(info.difficulty2 || info.difficulty1 || parsedBms.metadata.playLevel || '1'),
+          searchTags: Array.isArray(info.searchTags) ? info.searchTags.join(', ') : String(info.searchTags || 'custom')
+        }
+      }
+    })
+  };
+
+  const chartDocument = {
+    version: 1,
+    metadata,
+    notes: parsedBms.notes
+  };
+
+  await fs.writeFile(chartPath, JSON.stringify(chartDocument, null, 2), 'utf8');
+
+  return {
+    canceled: false,
+    chart: chartDocument,
+    chartPath,
+    importedFromMdm: true
   };
 }
 
@@ -419,6 +517,35 @@ function resolveNoteCode(note) {
   return resolveTapCode(note);
 }
 
+function resolveImportedNote(code) {
+  switch (String(code || '').toUpperCase()) {
+    case '01':
+    case '02':
+    case '03':
+      return { type: 'tap', attribute: 'small' };
+    case '04':
+    case '05':
+    case '06':
+      return { type: 'tap', attribute: 'medium-1' };
+    case '07':
+    case '08':
+    case '09':
+      return { type: 'tap', attribute: 'medium-2' };
+    case '0A':
+      return { type: 'tap', attribute: 'large-1' };
+    case '0B':
+      return { type: 'tap', attribute: 'large-2' };
+    case '0E':
+      return { type: 'double', attribute: 'sync' };
+    case '0F':
+      return { type: 'hold', attribute: 'default' };
+    case '0G':
+      return { type: 'spinner', attribute: 'burst' };
+    default:
+      return null;
+  }
+}
+
 function isSustainNote(note) {
   return note.type === 'hold' || (note.type === 'spinner' && note.attribute === 'burst');
 }
@@ -457,6 +584,157 @@ function noteTimeToMeasurePosition(timeSeconds, bpm) {
   const slotIndex = Math.max(0, Math.min(191, Math.round(measureFraction * 191)));
 
   return { measureIndex, slotIndex };
+}
+
+function bmsPositionToTime(measureIndex, slotIndex, slotCount, bpm) {
+  const safeBpm = Math.max(1, Number(bpm) || 120);
+  const beatLength = 60 / safeBpm;
+  const measureLength = beatLength * 4;
+  const denominator = slotCount === 192 ? 191 : slotCount;
+  const fraction = denominator > 0 ? slotIndex / denominator : 0;
+  return measureIndex * measureLength + fraction * measureLength;
+}
+
+function makeImportedNote(time, lane, type, attribute, holdLength = 0) {
+  return {
+    id: `note-${Date.now()}-${Math.random().toString(16).slice(2, 8)}`,
+    time: Number(Math.max(0, time).toFixed(3)),
+    lane,
+    type,
+    attribute,
+    holdLength: Number(Math.max(0, holdLength).toFixed(3)),
+    intensity: 1,
+    mirrored: false,
+    critical: false,
+    comment: ''
+  };
+}
+
+function parseBmsDocument(bmsText, fallbackBpm = 120) {
+  const metadata = {};
+  const tapEvents = [];
+  const sustainEventsByLane = new Map([
+    ['lane-1', []],
+    ['lane-2', []]
+  ]);
+  const bpm = Number((bmsText.match(/^#BPM\s+(.+)$/m) || [])[1]) || fallbackBpm || 120;
+
+  for (const rawLine of String(bmsText || '').split(/\r?\n/)) {
+    const line = rawLine.trim();
+    if (!line || line.startsWith('*')) {
+      continue;
+    }
+
+    const header = line.match(/^#(TITLE|ARTIST|GENRE|LEVELDESIGN|PLAYLEVEL)\s+(.+)$/i);
+    if (header) {
+      metadata[header[1].toLowerCase()] = header[2].trim();
+      continue;
+    }
+
+    const data = line.match(/^#(\d{3})(\d{2}):([0-9A-Z]+)$/i);
+    if (!data) {
+      continue;
+    }
+
+    const measureIndex = Number(data[1]);
+    const channel = data[2];
+    const body = data[3].toUpperCase();
+    const slotCount = Math.floor(body.length / 2);
+    const lane = channel === '14' || channel === '54' ? 'lane-2' : 'lane-1';
+
+    for (let slotIndex = 0; slotIndex < slotCount; slotIndex += 1) {
+      const code = body.slice(slotIndex * 2, slotIndex * 2 + 2);
+      if (code === '00') {
+        continue;
+      }
+
+      const noteInfo = resolveImportedNote(code);
+      if (!noteInfo) {
+        continue;
+      }
+
+      const time = bmsPositionToTime(measureIndex, slotIndex, slotCount, bpm);
+      if (channel === '13' || channel === '14') {
+        tapEvents.push({ time, lane, code, ...noteInfo });
+      } else if (channel === '53' || channel === '54') {
+        sustainEventsByLane.get(lane).push({ time, lane, code, ...noteInfo });
+      }
+    }
+  }
+
+  const notes = [];
+  const tapEventKey = (event) => `${event.code}:${event.time.toFixed(3)}`;
+  const consumedTapEvents = new Set();
+
+  for (const event of tapEvents) {
+    if (consumedTapEvents.has(event)) {
+      continue;
+    }
+
+    if (event.code === '0E') {
+      const pair = tapEvents.find((candidate) => (
+        candidate !== event
+        && !consumedTapEvents.has(candidate)
+        && candidate.code === event.code
+        && candidate.lane !== event.lane
+        && Math.abs(candidate.time - event.time) <= 0.004
+      ));
+
+      if (pair) {
+        consumedTapEvents.add(pair);
+      }
+      consumedTapEvents.add(event);
+      notes.push(makeImportedNote(event.time, 'lane-1', 'double', 'sync'));
+      continue;
+    }
+
+    const sameTimeDouble = tapEvents.find((candidate) => (
+      candidate !== event
+      && !consumedTapEvents.has(candidate)
+      && candidate.lane !== event.lane
+      && tapEventKey(candidate) === tapEventKey(event)
+    ));
+
+    if (sameTimeDouble) {
+      consumedTapEvents.add(event);
+      consumedTapEvents.add(sameTimeDouble);
+      notes.push(makeImportedNote(event.time, 'lane-1', 'double', 'sync'));
+      continue;
+    }
+
+    consumedTapEvents.add(event);
+    notes.push(makeImportedNote(event.time, event.lane, event.type, event.attribute));
+  }
+
+  for (const events of sustainEventsByLane.values()) {
+    events.sort((left, right) => left.time - right.time);
+    for (let index = 0; index < events.length; index += 2) {
+      const start = events[index];
+      const end = events[index + 1];
+      if (!end) {
+        notes.push(makeImportedNote(start.time, start.lane, start.type, start.attribute));
+        continue;
+      }
+
+      const sameKind = start.code === end.code;
+      const type = sameKind ? start.type : start.type;
+      const attribute = sameKind ? start.attribute : start.attribute;
+      notes.push(makeImportedNote(start.time, start.lane, type, attribute, end.time - start.time));
+    }
+  }
+
+  notes.sort((left, right) => left.time - right.time);
+  return {
+    metadata: {
+      title: metadata.title || '',
+      artist: metadata.artist || '',
+      scene: metadata.genre || 'scene_01',
+      levelDesigner: metadata.leveldesign || 'Chart Lab',
+      playLevel: metadata.playlevel || '1',
+      bpm
+    },
+    notes
+  };
 }
 
 function buildBmsDocument(chart) {
